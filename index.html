@@ -361,8 +361,66 @@ select {
 
 /* ── SONG SEARCH MODAL ── */
 .song-modal .modal { width: min(520px, 92vw); max-height: 80vh; }
-.song-step { display: none; flex-direction: column; }
-.song-step.active { display: flex; }
+.song-step { display: none; flex-direction: column; min-height: 0; }
+.song-step.active { display: flex; flex: 1; min-height: 0; }
+
+/* Loading bar */
+.song-loader {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: stretch;
+  padding: 2.5rem 1.5rem;
+  gap: 0.75rem;
+}
+.song-loader-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--ink-muted);
+  opacity: 0.45;
+  text-align: center;
+  letter-spacing: 0.08em;
+}
+.song-loader-track {
+  width: 100%;
+  height: 2px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+.song-loader-track::after {
+  content: '';
+  position: absolute;
+  left: -45%;
+  width: 45%;
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  animation: song-slide 1.1s cubic-bezier(0.4,0,0.6,1) infinite;
+}
+@keyframes song-slide {
+  0%   { left: -45%; }
+  100% { left: 105%; }
+}
+
+/* Error state */
+.song-error {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 2.5rem 1.5rem;
+}
+.song-error-msg {
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  color: var(--ink-muted);
+  opacity: 0.6;
+}
 
 .song-search-row {
   display: flex;
@@ -683,7 +741,6 @@ body.preview-mode .preview-edit-btn { display: block; }
     <div class="modal-header">
       <span id="song-modal-title">Search song</span>
       <div class="modal-actions">
-        <span class="song-status" id="song-status"></span>
         <button class="tb-btn" id="song-back-btn" onclick="songStep(1)" style="display:none">← Back</button>
         <button class="tb-btn" onclick="closeSongModal()">✕</button>
       </div>
@@ -695,6 +752,22 @@ body.preview-mode .preview-edit-btn { display: block; }
         <input id="song-query" type="text" placeholder="Artist, song title…"
           onkeydown="if(event.key==='Enter')doSongSearch()">
         <button class="tb-btn primary" onclick="doSongSearch()">Search</button>
+      </div>
+    </div>
+
+    <!-- Step: loading -->
+    <div class="song-step" id="song-step-loading">
+      <div class="song-loader">
+        <div class="song-loader-label">Searching…</div>
+        <div class="song-loader-track"></div>
+      </div>
+    </div>
+
+    <!-- Step: error -->
+    <div class="song-step" id="song-step-error">
+      <div class="song-error">
+        <div class="song-error-msg">Oops — something went wrong</div>
+        <button class="tb-btn" onclick="closeSongModal()">Close</button>
       </div>
     </div>
 
@@ -862,10 +935,14 @@ function openSongSearch() {
 function closeSongModal() { document.getElementById('song-modal').classList.remove('open'); }
 
 function songStep(n) {
-  document.getElementById('song-step-1').classList.toggle('active', n===1);
-  document.getElementById('song-step-2').classList.toggle('active', n===2);
+  ['song-step-1','song-step-2','song-step-loading','song-step-error'].forEach(id => {
+    document.getElementById(id).classList.remove('active');
+  });
+  const stepId = n==='loading' ? 'song-step-loading' : n==='error' ? 'song-step-error' : n===2 ? 'song-step-2' : 'song-step-1';
+  document.getElementById(stepId).classList.add('active');
   document.getElementById('song-back-btn').style.display = n===2 ? '' : 'none';
-  document.getElementById('song-modal-title').textContent = n===1 ? 'Search song' : 'Select a result';
+  const titles = {1:'Search song', 2:'Select a result', loading:'', error:''};
+  document.getElementById('song-modal-title').textContent = titles[n] ?? '';
 }
 
 function fmtDuration(s) {
@@ -877,13 +954,11 @@ function fmtDuration(s) {
 async function doSongSearch() {
   const query = document.getElementById('song-query').value.trim();
   if (!query) return;
-  const status = document.getElementById('song-status');
-  status.textContent = 'Searching…'; status.className = 'song-status loading';
+  songStep('loading');
   try {
     const res = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(query)}`);
     if (!res.ok) throw new Error();
     songResults = await res.json();
-    status.textContent = ''; status.className = 'song-status';
     if (!songResults.length) {
       document.getElementById('song-results').innerHTML = '<div class="song-empty">No results found</div>';
     } else {
@@ -902,7 +977,7 @@ async function doSongSearch() {
     }
     songStep(2);
   } catch(e) {
-    status.textContent = 'Error — try again'; status.className = 'song-status error';
+    songStep('error');
   }
 }
 
@@ -967,6 +1042,12 @@ function applySettingsFromObj(s) {
   syncVal('cfg-sim','val-sim',1,'%');
 }
 
+const DEFAULTS = {
+  size:'15', lh:'190', ws:'1', pg:'14', indent:'24', bw:'2', font:'0',
+  cols:'0', pnums:'1', bionic:'1', bioint:'50', tints:'1', tintop:'6',
+  repeat:'1', sim:'65'
+};
+
 function buildParams(includePreview) {
   const text  = document.getElementById('input').value;
   const title = document.getElementById('doc-title-input').value;
@@ -978,7 +1059,9 @@ function buildParams(includePreview) {
     params.set('t', LZString.compressToEncodedURIComponent(text));
   }
   if (title) params.set('title', title);
-  Object.entries(cfg).forEach(([k,v]) => params.set(k, v));
+  Object.entries(cfg).forEach(([k,v]) => {
+    if (String(v) !== String(DEFAULTS[k])) params.set(k, v);
+  });
   if (includePreview) params.set('preview', '1');
   return params;
 }
