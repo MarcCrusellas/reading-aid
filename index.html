@@ -688,6 +688,97 @@ body.preview-mode .preview-float { display: flex; }
   .para::before { display: none; }
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
+
+/* ── GOOGLE FONTS MODAL ── */
+.gf-search-row {
+  display: flex; gap: 8px; padding: 1rem;
+  border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+.gf-search-row input {
+  flex: 1; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 3px; padding: 0.4rem 0.7rem;
+  font-family: 'Atkinson Hyperlegible', Georgia, serif;
+  font-size: 13px; color: var(--ink); outline: none; transition: border-color 0.2s;
+}
+.gf-search-row input:focus { border-color: var(--accent); }
+.gf-search-row input::placeholder { color: #b8b0a4; }
+.gf-results {
+  flex: 1; overflow-y: auto; padding: 0.4rem 0.5rem 1rem;
+}
+.gf-card {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.55rem 0.75rem; border-radius: 4px; cursor: pointer;
+  transition: background 0.12s; border-bottom: 1px solid var(--border);
+}
+.gf-card:last-child { border-bottom: none; }
+.gf-card:hover { background: var(--bg); }
+.gf-card-name { font-size: 15px; color: var(--ink); }
+.gf-card-cat {
+  font-family: 'DM Mono', monospace; font-size: 9px;
+  color: var(--ink-muted); opacity: 0.45; text-transform: uppercase;
+}
+
+/* ── NOTES ── */
+.note-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; border-radius: 50%;
+  border: 1px solid var(--border); background: var(--paper);
+  cursor: pointer; color: var(--ink-muted); font-size: 9px;
+  opacity: 0; transition: opacity 0.15s; vertical-align: middle;
+  margin-left: 6px; flex-shrink: 0; line-height: 1;
+}
+.para:hover .note-btn { opacity: 0.6; }
+.note-btn:hover { opacity: 1 !important; background: var(--bg); }
+.note-btn.has-note {
+  opacity: 0.85 !important; background: rgba(192,96,58,0.1);
+  border-color: rgba(192,96,58,0.35); color: var(--accent);
+}
+.note-display {
+  display: block; font-family: 'DM Mono', monospace;
+  font-size: 10px; color: var(--ink-muted); opacity: 0.65;
+  font-style: italic; margin-top: 0.3rem; padding-left: 0.25rem;
+  border-left: 2px solid rgba(192,96,58,0.25);
+}
+.note-editor-wrap {
+  position: fixed; z-index: 200;
+  background: var(--paper); border: 1px solid var(--border);
+  border-radius: 5px; box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  width: 260px; padding: 0.6rem;
+  display: none; flex-direction: column; gap: 0.5rem;
+}
+.note-editor-wrap.open { display: flex; }
+.note-editor-textarea {
+  width: 100%; border: 1px solid var(--border); border-radius: 3px;
+  background: var(--bg); padding: 0.4rem 0.5rem;
+  font-family: 'DM Mono', monospace; font-size: 11px; color: var(--ink);
+  resize: none; outline: none; line-height: 1.5; min-height: 60px;
+}
+.note-editor-textarea:focus { border-color: var(--accent); }
+.note-editor-actions { display: flex; gap: 0.4rem; justify-content: flex-end; }
+
+/* Warning modal */
+.warn-modal-backdrop {
+  display: none; position: fixed; inset: 0;
+  background: rgba(26,24,20,0.45); z-index: 300;
+  align-items: center; justify-content: center;
+}
+.warn-modal-backdrop.open { display: flex; }
+.warn-modal {
+  background: var(--paper); border: 1px solid var(--border);
+  border-radius: 6px; width: min(360px, 90vw); padding: 1.5rem;
+  display: flex; flex-direction: column; gap: 1rem;
+}
+.warn-modal-msg {
+  font-family: 'Atkinson Hyperlegible', Georgia, serif;
+  font-size: 14px; color: var(--ink); line-height: 1.6;
+}
+.warn-modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
+
+@media print {
+  .note-btn { display: none !important; }
+  .note-display { opacity: 0.55; }
+  .note-editor-wrap, .warn-modal-backdrop { display: none !important; }
+}
 </style>
 </head>
 <body>
@@ -723,13 +814,14 @@ body.preview-mode .preview-float { display: flex; }
         <div class="section-title">Typography</div>
         <div class="cfg-row">
           <span class="cfg-label">Font family</span>
-          <select id="cfg-font" onchange="applySettings()">
+          <select id="cfg-font" onchange="onFontChange()">
             <option value="'Atkinson Hyperlegible',Georgia,serif">Atkinson (default)</option>
             <option value="'Lora',Georgia,serif">Lora</option>
             <option value="'Source Serif 4',Georgia,serif">Source Serif</option>
             <option value="Georgia,serif">Georgia</option>
             <option value="'Times New Roman',serif">Times New Roman</option>
             <option value="Arial,Helvetica,sans-serif">Arial</option>
+            <option value="__google__" id="opt-gfont">Google Font…</option>
           </select>
         </div>
         <div class="cfg-row">
@@ -745,6 +837,15 @@ body.preview-mode .preview-float { display: flex; }
             <input type="range" id="cfg-lh" min="130" max="260" value="190" oninput="syncLH();applySettings()">
             <span class="cfg-val" id="val-lh">1.90</span>
           </div>
+        </div>
+        <div class="cfg-row">
+          <span class="cfg-label">Text align</span>
+          <select id="cfg-align" onchange="applySettings()">
+            <option value="left">Left</option>
+            <option value="center">Center</option>
+            <option value="right">Right</option>
+            <option value="justify">Justify</option>
+          </select>
         </div>
         <div class="cfg-row">
           <span class="cfg-label">Word spacing</span>
@@ -953,6 +1054,44 @@ body.preview-mode .preview-float { display: flex; }
   </div>
 </div>
 
+
+<!-- Google Fonts modal -->
+<div class="modal-backdrop" id="gf-modal" onclick="if(event.target===this)closeGFModal()">
+  <div class="modal" style="max-height:75vh">
+    <div class="modal-header">
+      <span>Google Fonts</span>
+      <div class="modal-actions">
+        <button class="tb-btn" onclick="closeGFModal()">✕</button>
+      </div>
+    </div>
+    <div class="gf-search-row">
+      <input id="gf-query" type="text" placeholder="Search font name or category…"
+        oninput="renderGFResults()">
+    </div>
+    <div class="gf-results" id="gf-results"></div>
+  </div>
+</div>
+
+<!-- Note floating editor -->
+<div class="note-editor-wrap" id="note-editor">
+  <textarea class="note-editor-textarea" id="note-textarea" placeholder="Add a note…" rows="3"></textarea>
+  <div class="note-editor-actions">
+    <button class="tb-btn" id="note-delete-btn" onclick="deleteCurrentNote()">Delete</button>
+    <button class="tb-btn primary" onclick="saveCurrentNote()">Save</button>
+  </div>
+</div>
+
+<!-- Notes warning modal -->
+<div class="warn-modal-backdrop" id="warn-modal">
+  <div class="warn-modal">
+    <div class="warn-modal-msg">Editing the text will delete all your notes. Continue?</div>
+    <div class="warn-modal-actions">
+      <button class="tb-btn" onclick="cancelTextEdit()">Cancel</button>
+      <button class="tb-btn primary" onclick="confirmTextEdit()">Continue</button>
+    </div>
+  </div>
+</div>
+
 <!-- Share toast -->
 <div id="share-toast" style="
   position:fixed; bottom:1.5rem; left:50%; transform:translateX(-50%) translateY(20px);
@@ -995,15 +1134,16 @@ function applySettings() {
   const pg     = (document.getElementById('cfg-pg').value*0.1).toFixed(1)+'rem';
   const indent = (document.getElementById('cfg-indent').value*0.1).toFixed(1)+'rem';
   const bw     = document.getElementById('cfg-bw').value+'px';
-  const font   = document.getElementById('cfg-font').value;
+  const font = document.getElementById('cfg-font').value === '__google__' ? "'Atkinson Hyperlegible',Georgia,serif" : document.getElementById('cfg-font').value;
   const margin = (document.getElementById('cfg-margin').value / 10).toFixed(1);
   const cols   = document.getElementById('cfg-cols').checked;
   const pnums  = document.getElementById('cfg-pnums').checked;
+  const align  = document.getElementById('cfg-align').value;
   const top    = (document.getElementById('cfg-tint-op').value/100).toFixed(2);
   document.getElementById('dynamic-styles').textContent = `
     .output { font-size:${size}px; line-height:${lh}; font-family:${font}; }
     .doc-title { font-family:${font}; }
-    .para { margin-bottom:${pg}; padding-left:${indent}; border-left-width:${bw}; word-spacing:${ws}; }
+    .para { margin-bottom:${pg}; padding-left:${indent}; border-left-width:${bw}; word-spacing:${ws}; text-align:${align}; }
     .para::before { display:${pnums?'block':'none'}; }
     .para.is-heading { border-left-width:calc(${bw} * 1.6); }
     :root { --line-1:rgba(192,96,58,${top}); --line-2:rgba(60,100,160,${(parseFloat(top)*0.85).toFixed(2)}); --line-3:rgba(40,130,80,${(parseFloat(top)*0.85).toFixed(2)}); }
@@ -1015,10 +1155,14 @@ function applySettings() {
 
 /* ── Bionic ── */
 function bionicWord(w) {
-  if (w.length<=1) return '<span class="bio">'+w+'</span>';
-  const pct = parseInt(document.getElementById('cfg-bio-int').value)/100;
-  const n = Math.max(1, Math.ceil(w.length*pct));
-  return '<span class="bio">'+w.slice(0,n)+'</span>'+w.slice(n);
+  // Separate leading punct, alphabetic core, trailing punct
+  const match = w.match(/^([^a-zA-ZÀ-ÿ]*)([a-zA-ZÀ-ÿ](?:.*[a-zA-ZÀ-ÿ])?)([^a-zA-ZÀ-ÿ]*)$/);
+  if (!match || !match[2]) return w; // pure punctuation/numbers — leave untouched
+  const [, pre, core, post] = match;
+  if (core.length <= 1) return pre + '<span class="bio">' + core + '</span>' + post;
+  const pct = parseInt(document.getElementById('cfg-bio-int').value) / 100;
+  const n = Math.max(1, Math.ceil(core.length * pct));
+  return pre + '<span class="bio">' + core.slice(0, n) + '</span>' + core.slice(n) + post;
 }
 function processLine(text, useBionic) {
   if (!useBionic) return text;
@@ -1070,13 +1214,18 @@ function render() {
   const parasHtml=paras.map((para,idx)=>{
     const lines=para.split('\n');
     const isHeading=lines.length===1&&looksLikeHeading(lines[0].trim());
-    const processed=lines.map((line,li)=>{
+    const linesHtml=lines.map((line,li)=>{
+      const key=`${idx}-${li}`;
       const p=processLine(line.trim(),useBionic&&!isHeading);
-      return (li===lines.length-1&&repeatMap[idx])?p+badge(repeatMap[idx].total,repeatMap[idx].others):p;
+      const withBadge=(li===lines.length-1&&repeatMap[idx])?p+badge(repeatMap[idx].total,repeatMap[idx].others):p;
+      const hasNote=!!notes[key];
+      const noteBtn=`<button class="note-btn${hasNote?' has-note':''}" onclick="openNote(event,'${key}')" title="${hasNote?'Edit note':'Add note'}">${hasNote?'✎':'+'}&#8203;</button>`;
+      const noteHtml=hasNote?`<span class="note-display">${notes[key].replace(/</g,'&lt;')}</span>`:'';
+      return withBadge+noteBtn+noteHtml;
     }).join('<br>');
     const cls=['para',isHeading&&'is-heading',repeatMap[idx]&&'has-repeat'].filter(Boolean).join(' ');
     const noTint=!useTints?' style="background:transparent;border-left-color:transparent"':'';
-    return `<p class="${cls}" data-pnum="${idx+1}"${noTint}>${processed}</p>`;
+    return `<p class="${cls}" data-pnum="${idx+1}"${noTint}>${linesHtml}</p>`;
   }).join('');
   out.innerHTML=titleHtml+parasHtml;
 }
@@ -1156,6 +1305,7 @@ function selectSong(i) {
 /* ── URL state ── */
 function getSettings() {
   return {
+    align:   document.getElementById('cfg-align').value,
     size:    document.getElementById('cfg-size').value,
     lh:      document.getElementById('cfg-lh').value,
     ws:      document.getElementById('cfg-ws').value,
@@ -1163,6 +1313,7 @@ function getSettings() {
     indent:  document.getElementById('cfg-indent').value,
     bw:      document.getElementById('cfg-bw').value,
     font:    document.getElementById('cfg-font').selectedIndex,
+    gfont:   document.getElementById('cfg-font').value.includes('__google__') ? '' : (document.getElementById('cfg-font').dataset.gfont||''),
     margin:  document.getElementById('cfg-margin').value,
     cols:    document.getElementById('cfg-cols').checked?1:0,
     pnums:   document.getElementById('cfg-pnums').checked?1:0,
@@ -1176,13 +1327,20 @@ function getSettings() {
 }
 
 function applySettingsFromObj(s) {
+  if (s.align  !== undefined) document.getElementById('cfg-align').value   = s.align;
   if (s.size   !== undefined) document.getElementById('cfg-size').value    = s.size;
   if (s.lh     !== undefined) document.getElementById('cfg-lh').value      = s.lh;
   if (s.ws     !== undefined) document.getElementById('cfg-ws').value      = s.ws;
   if (s.pg     !== undefined) document.getElementById('cfg-pg').value      = s.pg;
   if (s.indent !== undefined) document.getElementById('cfg-indent').value  = s.indent;
   if (s.bw     !== undefined) document.getElementById('cfg-bw').value      = s.bw;
-  if (s.font   !== undefined) document.getElementById('cfg-font').selectedIndex = s.font;
+  if (s.font !== undefined) {
+    if (s.gfont) {
+      loadGoogleFont(s.gfont, false);
+    } else {
+      document.getElementById('cfg-font').selectedIndex = s.font;
+    }
+  }
   if (s.margin !== undefined) document.getElementById('cfg-margin').value   = s.margin;
   if (s.cols   !== undefined) document.getElementById('cfg-cols').checked   = s.cols==1;
   if (s.pnums  !== undefined) document.getElementById('cfg-pnums').checked  = s.pnums==1;
@@ -1203,6 +1361,7 @@ function applySettingsFromObj(s) {
 }
 
 const DEFAULTS = {
+  align:'left',
   size:'15', lh:'190', ws:'1', pg:'14', indent:'24', bw:'2', font:'0',
   margin:'10', cols:'0', pnums:'1', bionic:'1', bioint:'50', tints:'1', tintop:'6',
   repeat:'1', sim:'65'
@@ -1213,7 +1372,7 @@ function buildParams(includePreview) {
   const title = document.getElementById('doc-title-input').value;
   const cfg   = getSettings();
   const params = new URLSearchParams();
-  if (currentSongId && text.trim() === originalLyrics.trim()) {
+  if (currentSongId && text.trim() === originalLyrics.trim() && Object.keys(notes).length === 0) {
     params.set('lrcid', currentSongId);
   } else if (text) {
     params.set('t', LZString.compressToEncodedURIComponent(text));
@@ -1260,7 +1419,7 @@ async function initFromUrl() {
   if (params.has('preview')) document.body.classList.add('preview-mode');
 
   // Apply settings from URL
-  const cfgKeys = ['size','lh','ws','pg','indent','bw','font','margin','cols','pnums','bionic','bioint','tints','tintop','repeat','sim'];
+  const cfgKeys = ['align','size','lh','ws','pg','indent','bw','font','gfont','margin','cols','pnums','bionic','bioint','tints','tintop','repeat','sim'];
   const s = {};
   cfgKeys.forEach(k => { if (params.has(k)) s[k] = params.get(k); });
   if (Object.keys(s).length) applySettingsFromObj(s);
@@ -1310,9 +1469,12 @@ async function initFromUrl() {
 
 /* ── Markdown export ── */
 function bionicWordMd(w) {
-  const pct=parseInt(document.getElementById('cfg-bio-int').value)/100;
-  const n=Math.max(1,Math.ceil(w.length*pct));
-  return '**'+w.slice(0,n)+'**'+w.slice(n);
+  const match = w.match(/^([^a-zA-ZÀ-ÿ]*)([a-zA-ZÀ-ÿ](?:.*[a-zA-ZÀ-ÿ])?)([^a-zA-ZÀ-ÿ]*)$/);
+  if (!match || !match[2]) return w;
+  const [, pre, core, post] = match;
+  const pct = parseInt(document.getElementById('cfg-bio-int').value) / 100;
+  const n = Math.max(1, Math.ceil(core.length * pct));
+  return pre + '**' + core.slice(0, n) + '**' + core.slice(n) + post;
 }
 function processLineMd(text) {
   return text.split(/(\s+)/).map(t=>/\s/.test(t)?t:bionicWordMd(t)).join('');
@@ -1355,10 +1517,194 @@ function copyMarkdown() {
 
 /* ── Live input ── */
 let timer;
-document.getElementById('input').addEventListener('input',()=>{
-  clearTimeout(timer); timer=setTimeout(()=>{ render(); updateUrl(); },180);
+let pendingInputEvent = null;
+let lastInputVal = '';
+
+document.getElementById('input').addEventListener('input', e => {
+  if (Object.keys(notes).length > 0 && !warnAcknowledged) {
+    // Revert the change visually, show warning
+    document.getElementById('input').value = lastInputVal;
+    pendingInputEvent = true;
+    document.getElementById('warn-modal').classList.add('open');
+    return;
+  }
+  lastInputVal = document.getElementById('input').value;
+  clearTimeout(timer); timer = setTimeout(()=>{ render(); updateUrl(); }, 180);
 });
-document.addEventListener('keydown',e=>{ if(e.key==='Escape') { closeModal(); closeSongModal(); } });
+
+document.getElementById('input').addEventListener('focus', () => {
+  lastInputVal = document.getElementById('input').value;
+});
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') { closeModal(); closeSongModal(); closeGFModal(); } });
+
+/* ── Notes ── */
+let notes = {};
+let currentNoteIdx = null;
+let warnAcknowledged = false;
+
+function openNote(e, key) {
+  e.stopPropagation();
+  currentNoteIdx = key;
+  const editor = document.getElementById('note-editor');
+  const ta = document.getElementById('note-textarea');
+  ta.value = notes[key] || '';
+  document.getElementById('note-delete-btn').style.display = notes[key] ? '' : 'none';
+  const rect = e.target.getBoundingClientRect();
+  let top = rect.bottom + 6;
+  let left = rect.left - 240;
+  if (left < 8) left = 8;
+  if (top + 140 > window.innerHeight) top = rect.top - 146;
+  editor.style.top = top + 'px';
+  editor.style.left = left + 'px';
+  editor.classList.add('open');
+  ta.focus();
+}
+
+function saveCurrentNote() {
+  if (currentNoteIdx === null) return;
+  const val = document.getElementById('note-textarea').value.trim();
+  if (val) notes[currentNoteIdx] = val;
+  else delete notes[currentNoteIdx];
+  document.getElementById('note-editor').classList.remove('open');
+  currentNoteIdx = null;
+  render();
+  updateUrl();
+}
+
+function deleteCurrentNote() {
+  if (currentNoteIdx === null) return;
+  delete notes[currentNoteIdx];
+  document.getElementById('note-editor').classList.remove('open');
+  currentNoteIdx = null;
+  render();
+  updateUrl();
+}
+
+document.addEventListener('click', e => {
+  const editor = document.getElementById('note-editor');
+  if (editor.classList.contains('open') && !editor.contains(e.target)) {
+    saveCurrentNote();
+  }
+});
+
+document.getElementById('note-textarea').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveCurrentNote(); }
+  if (e.key === 'Escape') { document.getElementById('note-editor').classList.remove('open'); currentNoteIdx = null; }
+});
+
+function cancelTextEdit() {
+  document.getElementById('warn-modal').classList.remove('open');
+  pendingInputEvent = null;
+}
+
+function confirmTextEdit() {
+  notes = {};
+  warnAcknowledged = true;
+  document.getElementById('warn-modal').classList.remove('open');
+  // Allow editing now
+  clearTimeout(timer);
+  timer = setTimeout(()=>{ render(); updateUrl(); warnAcknowledged = false; }, 180);
+}
+
+/* ── Google Fonts ── */
+const GOOGLE_FONTS = [
+  {n:'Lora',c:'Serif'},{n:'Merriweather',c:'Serif'},{n:'Playfair Display',c:'Serif'},
+  {n:'EB Garamond',c:'Serif'},{n:'Libre Baskerville',c:'Serif'},{n:'Crimson Pro',c:'Serif'},
+  {n:'PT Serif',c:'Serif'},{n:'Bitter',c:'Serif'},{n:'Cormorant Garamond',c:'Serif'},
+  {n:'Spectral',c:'Serif'},{n:'Cardo',c:'Serif'},{n:'Domine',c:'Serif'},
+  {n:'Noto Serif',c:'Serif'},{n:'Gelasio',c:'Serif'},{n:'Zilla Slab',c:'Serif'},
+  {n:'Open Sans',c:'Sans'},{n:'Roboto',c:'Sans'},{n:'Noto Sans',c:'Sans'},
+  {n:'Raleway',c:'Sans'},{n:'Montserrat',c:'Sans'},{n:'Nunito',c:'Sans'},
+  {n:'Poppins',c:'Sans'},{n:'Inter',c:'Sans'},{n:'DM Sans',c:'Sans'},
+  {n:'Outfit',c:'Sans'},{n:'Figtree',c:'Sans'},{n:'Lexend',c:'Sans'},
+  {n:'Work Sans',c:'Sans'},{n:'Karla',c:'Sans'},{n:'Rubik',c:'Sans'},
+  {n:'Quicksand',c:'Sans'},{n:'Cabin',c:'Sans'},{n:'Josefin Sans',c:'Sans'},
+  {n:'Nunito Sans',c:'Sans'},{n:'Hind',c:'Sans'},{n:'Mulish',c:'Sans'},
+  {n:'Barlow',c:'Sans'},{n:'Manrope',c:'Sans'},{n:'Plus Jakarta Sans',c:'Sans'},
+  {n:'JetBrains Mono',c:'Mono'},{n:'Fira Code',c:'Mono'},{n:'IBM Plex Mono',c:'Mono'},
+  {n:'Space Mono',c:'Mono'},{n:'Source Code Pro',c:'Mono'},{n:'Inconsolata',c:'Mono'},
+];
+
+let gfLoadedFonts = new Set();
+
+function onFontChange() {
+  if (document.getElementById('cfg-font').value === '__google__') {
+    openGFModal();
+  } else {
+    applySettings();
+  }
+}
+
+function openGFModal() {
+  document.getElementById('gf-modal').classList.add('open');
+  document.getElementById('gf-query').value = '';
+  renderGFResults();
+  setTimeout(() => document.getElementById('gf-query').focus(), 60);
+}
+
+function closeGFModal() {
+  document.getElementById('gf-modal').classList.remove('open');
+  // If still on __google__ with nothing loaded, revert
+  if (document.getElementById('cfg-font').value === '__google__')
+    document.getElementById('cfg-font').selectedIndex = 0;
+}
+
+function renderGFResults() {
+  const q = document.getElementById('gf-query').value.toLowerCase().trim();
+  const list = q
+    ? GOOGLE_FONTS.filter(f => f.n.toLowerCase().includes(q) || f.c.toLowerCase().includes(q))
+    : GOOGLE_FONTS;
+  document.getElementById('gf-results').innerHTML = list.length
+    ? list.map(f => `<div class="gf-card" onclick="selectGoogleFont('${f.n.replace(/'/g,"\'")}')">
+        <span class="gf-card-name" id="gf-prev-${f.n.replace(/ /g,'-')}">${f.n}</span>
+        <span class="gf-card-cat">${f.c}</span>
+      </div>`).join('')
+    : '<div class="song-empty">No fonts found</div>';
+  // Load preview fonts lazily
+  list.slice(0,20).forEach(f => loadGoogleFont(f.n, true));
+}
+
+function loadGoogleFont(name, previewOnly) {
+  if (gfLoadedFonts.has(name)) {
+    if (!previewOnly) applyGFFont(name);
+    return;
+  }
+  gfLoadedFonts.add(name);
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = `https://fonts.googleapis.com/css2?family=${name.replace(/ /g,'+')}:ital,wght@0,400;0,700;1,400&display=swap`;
+  document.head.appendChild(link);
+  if (!previewOnly) link.onload = () => applyGFFont(name);
+}
+
+function applyGFFont(name) {
+  // Apply font to preview cards
+  const el = document.getElementById('gf-prev-' + name.replace(/ /g,'-'));
+  if (el) el.style.fontFamily = `'${name}', sans-serif`;
+}
+
+function selectGoogleFont(name) {
+  loadGoogleFont(name, false);
+  const sel = document.getElementById('cfg-font');
+  const cssVal = `'${name}',sans-serif`;
+  // Check if option already exists
+  let existing = [...sel.options].find(o => o.value === cssVal);
+  if (!existing) {
+    const opt = document.createElement('option');
+    opt.value = cssVal;
+    opt.textContent = name;
+    opt.dataset.gfont = name;
+    // Insert before the __google__ option
+    const gfOpt = document.getElementById('opt-gfont');
+    sel.insertBefore(opt, gfOpt);
+    existing = opt;
+  }
+  sel.value = cssVal;
+  sel.dataset.gfont = name;
+  closeGFModal();
+  applySettings();
+}
+
 
 /* ── Preview widget ── */
 function togglePreviewWidget() {
