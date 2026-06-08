@@ -1459,7 +1459,8 @@ function updateStreamingLinks() {
 function updateUrl() {
   clearTimeout(urlTimer);
   urlTimer = setTimeout(() => {
-    const params = buildParams(false);
+    const isPreview = new URLSearchParams(location.search).has('preview');
+    const params = buildParams(isPreview);
     try {
       history.replaceState(null, '', location.pathname + '?' + params.toString());
     } catch(e) {}
