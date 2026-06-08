@@ -525,19 +525,20 @@ body.preview-mode .panels {
   align-items: flex-start;
   justify-content: center;
   background: #ddd8ce;
-  padding: 2.5rem 2rem;
+  padding: var(--pw-panels-padding, 2.5rem 2rem);
   overflow-y: auto;
 }
 
 body.preview-mode .panel-right {
   width: 100%;
-  max-width: 740px;
+  max-width: var(--pw-max-width, 740px);
   height: auto;
   min-height: calc(100vh - 5rem);
   border: 1px solid var(--border);
   border-radius: 6px;
-  box-shadow: 0 6px 32px rgba(0,0,0,0.12);
+  box-shadow: var(--pw-shadow, 0 6px 32px rgba(0,0,0,0.12));
   overflow: visible;
+  transition: max-width 0.2s, border-radius 0.2s;
 }
 
 body.preview-mode .panel-label { display: none; }
@@ -1798,13 +1799,24 @@ function pwSize(delta) {
   applySettings();
 }
 
-let pwMarginVal = 4; // 0-8 steps, maps to rem values
+let pwMarginVal = 4;
 
 function pwMargin(delta) {
   pwMarginVal = Math.min(8, Math.max(0, pwMarginVal + delta));
   document.getElementById('pw-margin-val').textContent = pwMarginVal;
-  const p = pwMarginVal === 0 ? '0' : `${pwMarginVal * 0.4}rem ${pwMarginVal * 0.5}rem ${pwMarginVal * 0.6}rem`;
-  document.documentElement.style.setProperty('--pw-padding', p);
+  const root = document.documentElement;
+  if (pwMarginVal === 0) {
+    root.style.setProperty('--pw-padding', '0.5rem 0.75rem 2rem');
+    root.style.setProperty('--pw-panels-padding', '0');
+    root.style.setProperty('--pw-max-width', '100%');
+    root.style.setProperty('--pw-shadow', 'none');
+  } else {
+    const op = pwMarginVal * 0.4;
+    root.style.setProperty('--pw-padding', `${op}rem ${op * 1.1}rem ${op * 1.3}rem`);
+    root.style.setProperty('--pw-panels-padding', `${op * 0.6}rem ${op * 0.5}rem`);
+    root.style.setProperty('--pw-max-width', `${Math.round(560 + pwMarginVal * 22)}px`);
+    root.style.setProperty('--pw-shadow', `0 ${Math.round(pwMarginVal*0.75)}px ${pwMarginVal*4}px rgba(0,0,0,${(0.04 + pwMarginVal*0.01).toFixed(2)})`);
+  }
 }
 
 function pwSync() {
