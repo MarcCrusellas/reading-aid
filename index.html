@@ -65,7 +65,7 @@
 
   .opt-label input[type=checkbox] { accent-color: var(--accent); width: 13px; height: 13px; }
 
-  .topbar-right { margin-left: auto; display: flex; gap: 0.6rem; }
+  .topbar-right { display: flex; gap: 0.6rem; }
 
   button {
     font-family: 'DM Mono', monospace;
@@ -248,6 +248,34 @@
     overflow-y: auto;
   }
 
+  .topbar-size {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-left: auto;
+  }
+
+  .size-btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    padding: 0.25rem 0.5rem;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--ink-muted);
+    border-radius: 3px;
+    cursor: pointer;
+    line-height: 1;
+  }
+  .size-btn:hover { background: var(--bg); }
+
+  .size-val {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--ink-muted);
+    min-width: 20px;
+    text-align: center;
+  }
+
   .copy-confirm {
     font-family: 'DM Mono', monospace;
     font-size: 10px;
@@ -277,6 +305,12 @@
     <label class="opt-label"><input type="checkbox" id="opt-bionic" checked> Bionic</label>
     <label class="opt-label"><input type="checkbox" id="opt-color" checked> Line tints</label>
     <label class="opt-label"><input type="checkbox" id="opt-repeat" checked> Repeat detection</label>
+  </div>
+  <div class="topbar-size">
+    <span class="opt-label" style="margin-right:4px">Size</span>
+    <button class="size-btn" onclick="changeSize(-1)">A−</button>
+    <span class="size-val" id="size-val">15</span>
+    <button class="size-btn" onclick="changeSize(1)">A+</button>
   </div>
   <div class="topbar-right">
     <button onclick="document.getElementById('input').value='';render()">Clear</button>
@@ -455,6 +489,13 @@
       el.classList.add('show');
       setTimeout(() => el.classList.remove('show'), 1800);
     });
+  }
+
+  let fontSize = 15;
+  function changeSize(delta) {
+    fontSize = Math.min(28, Math.max(10, fontSize + delta));
+    document.getElementById('output').style.fontSize = fontSize + 'px';
+    document.getElementById('size-val').textContent = fontSize;
   }
 
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
