@@ -678,6 +678,8 @@ body.preview-mode .preview-float { display: flex; }
 
 /* ── PRINT ── */
 @media print {
+  /* Force readable ink regardless of theme */
+  .output { color: #111 !important; background: white !important; }
   body { display: block; height: auto; overflow: visible; background: white; }
   .topbar, .panel-left, .panel-label, .modal-backdrop { display: none !important; }
   .panels { display: block; }
@@ -1522,6 +1524,14 @@ function syncNoteGap() { const v=(document.getElementById('cfg-note-gap').value*
 function syncMargin() { const v=(document.getElementById('cfg-margin').value*0.1).toFixed(1)+'cm'; document.getElementById('val-margin').textContent=v; }
 
 /* ── Apply CSS settings ── */
+function tintColor(base, opacityScale) {
+  // base is like 'rgba(R,G,B,X)' — scale its alpha by opacityScale/0.06
+  const m = base.match(/rgba\((\d+),(\d+),(\d+),([\d.]+)\)/);
+  if (!m) return base;
+  const scaled = Math.min(1, parseFloat(m[4]) * parseFloat(opacityScale) / 0.06).toFixed(2);
+  return `rgba(${m[1]},${m[2]},${m[3]},${scaled})`;
+}
+
 function applySettings() {
   const size   = document.getElementById('cfg-size').value;
   const lh     = (document.getElementById('cfg-lh').value/100).toFixed(2);
@@ -1544,7 +1554,7 @@ function applySettings() {
     .para::before { display:${pnums?'block':'none'}; }
     .para.is-heading { border-left-width:calc(${bw} * 1.6); }
     :root { --note-gap: ${noteGap}; }
-    :root { --line-1:rgba(192,96,58,${top}); --line-2:rgba(60,100,160,${(parseFloat(top)*0.85).toFixed(2)}); --line-3:rgba(40,130,80,${(parseFloat(top)*0.85).toFixed(2)}); }
+    :root { --line-1:${tintColor(THEMES[currentThemeIdx].l1,top)}; --line-2:${tintColor(THEMES[currentThemeIdx].l2,top)}; --line-3:${tintColor(THEMES[currentThemeIdx].l3,top)}; }
     @page { margin: ${margin}cm; }
     @media print { .output { columns:${cols?2:1}; column-gap:2.5rem; font-size:${size}px; } }
   `;
@@ -1711,6 +1721,7 @@ function selectSong(i) {
 function getSettings() {
   return {
     align:     document.getElementById('cfg-align').value,
+    pwmargin:  window.pwMarginVal ?? 4,
     notepos:   document.getElementById('cfg-note-pos')?.value || 'below',
     notegap:   document.getElementById('cfg-note-gap').value,
     size:    document.getElementById('cfg-size').value,
@@ -1734,7 +1745,8 @@ function getSettings() {
 }
 
 function applySettingsFromObj(s) {
-  if (s.align   !== undefined) document.getElementById('cfg-align').value    = s.align;
+  if (s.align    !== undefined) document.getElementById('cfg-align').value    = s.align;
+  if (s.pwmargin !== undefined) { window.pwMarginVal = parseInt(s.pwmargin); pwMargin(0); document.getElementById('pw-margin-val').textContent = window.pwMarginVal; }
   if (s.notepos !== undefined && document.getElementById('cfg-note-pos')) document.getElementById('cfg-note-pos').value = s.notepos;
   if (s.notegap !== undefined) { document.getElementById('cfg-note-gap').value = s.notegap; syncNoteGap(); }
   if (s.size   !== undefined) document.getElementById('cfg-size').value    = s.size;
@@ -1770,7 +1782,7 @@ function applySettingsFromObj(s) {
 }
 
 const DEFAULTS = {
-  align:'left', notepos:'below', notegap:'3',
+  align:'left', notepos:'below', notegap:'3', pwmargin:'4',
   size:'15', lh:'190', ws:'1', pg:'14', indent:'24', bw:'2', font:'0',
   margin:'10', cols:'0', pnums:'1', bionic:'1', bioint:'50', tints:'1', tintop:'6',
   repeat:'1', sim:'65'
@@ -1848,7 +1860,7 @@ async function initFromUrl() {
   if (params.has('preview')) document.body.classList.add('preview-mode');
 
   // Apply settings from URL
-  const cfgKeys = ['align','notepos','notegap','size','lh','ws','pg','indent','bw','font','gfont','margin','cols','pnums','bionic','bioint','tints','tintop','repeat','sim'];
+  const cfgKeys = ['align','notepos','notegap','pwmargin','size','lh','ws','pg','indent','bw','font','gfont','margin','cols','pnums','bionic','bioint','tints','tintop','repeat','sim'];
   const s = {};
   cfgKeys.forEach(k => { if (params.has(k)) s[k] = params.get(k); });
   if (Object.keys(s).length) applySettingsFromObj(s);
@@ -1914,6 +1926,7 @@ async function initFromUrl() {
       }
     } catch(e) {}
   }
+  lastInputVal = document.getElementById('input').value;
   applySettings();
   render();
   syncPreviewWidget();
@@ -1974,10 +1987,10 @@ function copyMarkdown() {
 /* ── Live input ── */
 let timer;
 let pendingInputEvent = null;
-let lastInputVal = '';
+let lastInputVal = document.getElementById('input')?.value || '';
 
 document.getElementById('input').addEventListener('input', e => {
-  if (Object.keys(notes).length > 0 && !warnAcknowledged) {
+  if ((Object.keys(notes).length > 0 || Object.keys(highlights).length > 0) && !warnAcknowledged) {
     // Revert the change visually, show warning
     document.getElementById('input').value = lastInputVal;
     pendingInputEvent = true;
@@ -2078,14 +2091,25 @@ function getSelectionInfo() {
   if (!para) return null;
   const lines = para.split('\n');
   const plain = lines[lidx]?.trim() || '';
-  // Use text content of ln element (strip HTML) to map offset
-  const lnText = lnEl.textContent;
+  // Walk the text nodes of lnEl to find exact char offset of selection start
   const selText = sel.toString();
-  const start = lnText.indexOf(selText);
-  if (start < 0) return null;
-  // Map from lnText position to plain text position (they may differ due to note text appended)
-  const plainStart = Math.min(start, plain.length);
-  const plainEnd   = Math.min(start + selText.length, plain.length);
+  let charOffset = 0;
+  let found = false;
+  const walker = document.createTreeWalker(lnEl, NodeFilter.SHOW_TEXT);
+  let node;
+  while ((node = walker.nextNode())) {
+    if (node === range.startContainer) {
+      charOffset += range.startOffset;
+      found = true;
+      break;
+    }
+    charOffset += node.textContent.length;
+  }
+  if (!found) return null;
+  // Clamp to plain text length (lnEl has extra text from note display)
+  const plainStart = Math.min(charOffset, plain.length);
+  const plainEnd   = Math.min(charOffset + selText.length, plain.length);
+  if (plainStart >= plainEnd) return null;
   return {key:`${pidx}-${lidx}`, s:plainStart, e:plainEnd};
 }
 
@@ -2292,6 +2316,7 @@ function cancelTextEdit() {
 
 function confirmTextEdit() {
   notes = {};
+  highlights = {};
   warnAcknowledged = true;
   document.getElementById('warn-modal').classList.remove('open');
   // Allow editing now
@@ -2415,11 +2440,11 @@ function pwSize(delta) {
   applySettings();
 }
 
-let pwMarginVal = 4;
+window.pwMarginVal = 4;
 
 function pwMargin(delta) {
-  pwMarginVal = Math.min(8, Math.max(0, pwMarginVal + delta));
-  document.getElementById('pw-margin-val').textContent = pwMarginVal;
+  window.pwMarginVal = Math.min(8, Math.max(0, window.pwMarginVal + delta));
+  document.getElementById('pw-margin-val').textContent = window.pwMarginVal;
   const root = document.documentElement;
   if (pwMarginVal === 0) {
     root.style.setProperty('--pw-padding', '0.5rem 0.75rem 2rem');
