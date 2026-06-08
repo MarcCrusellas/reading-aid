@@ -544,27 +544,136 @@ body.preview-mode .panel-label { display: none; }
 
 body.preview-mode .output { padding: 2.5rem 3rem 4rem; }
 
-.preview-edit-btn {
+/* Preview mode floating UI */
+.preview-float {
   display: none;
   position: fixed;
-  top: 1rem;
-  right: 1rem;
+  bottom: 1.25rem;
+  right: 1.25rem;
   z-index: 50;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+body.preview-mode .preview-float { display: flex; }
+
+/* Settings widget */
+.preview-widget {
   background: var(--paper);
   border: 1px solid var(--border);
-  border-radius: 3px;
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  width: 200px;
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transition: max-height 0.25s ease, opacity 0.2s ease;
+  pointer-events: none;
+}
+.preview-widget.open {
+  max-height: 320px;
+  opacity: 1;
+  pointer-events: auto;
+}
+.preview-widget-inner {
+  padding: 0.85rem 1rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+.pw-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.pw-label {
   font-family: 'DM Mono', monospace;
   font-size: 10px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
   color: var(--ink-muted);
-  padding: 0.4rem 0.85rem;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  transition: background 0.15s;
+  flex-shrink: 0;
+  min-width: 56px;
 }
-.preview-edit-btn:hover { background: var(--bg); }
-body.preview-mode .preview-edit-btn { display: block; }
+.pw-size-ctrl {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.pw-size-btn {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--ink-muted);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  width: 22px; height: 22px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+}
+.pw-size-btn:hover { background: var(--border); }
+.pw-size-val {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--ink);
+  min-width: 22px;
+  text-align: center;
+}
+.pw-slider {
+  -webkit-appearance: none;
+  flex: 1;
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+.pw-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+}
+
+/* Bottom bar: toggle + edit */
+.preview-bottom-bar {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+.preview-toggle-btn {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--ink-muted);
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+.preview-toggle-btn:hover { background: var(--bg); }
+.preview-toggle-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+
+.preview-edit-btn {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  background: var(--ink);
+  color: var(--paper);
+  border: none;
+  border-radius: 20px;
+  padding: 0.55rem 1.1rem;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+  transition: opacity 0.15s;
+}
+.preview-edit-btn:hover { opacity: 0.85; }
 
 /* ── PRINT ── */
 @media print {
@@ -572,7 +681,7 @@ body.preview-mode .preview-edit-btn { display: block; }
   .topbar, .panel-left, .panel-label, .modal-backdrop { display: none !important; }
   .panels { display: block; }
   .panel-right { overflow: visible; background: white; }
-  .output { padding: 1.5cm 2cm; }
+  .output { padding: 0.2cm 0.4cm; }
   .doc-title { padding-left: 0; }
   .doc-divider { margin-left: 0; }
   .para { break-inside: avoid; }
@@ -673,6 +782,13 @@ body.preview-mode .preview-edit-btn { display: block; }
 
       <div class="settings-section">
         <div class="section-title">Layout</div>
+        <div class="cfg-row">
+          <span class="cfg-label">Print margins</span>
+          <div class="cfg-control">
+            <input type="range" id="cfg-margin" min="0" max="30" value="10" oninput="syncMargin();applySettings()">
+            <span class="cfg-val" id="val-margin">1.0cm</span>
+          </div>
+        </div>
         <div class="cfg-row">
           <span class="cfg-label">Two columns (print)</span>
           <label class="toggle"><input type="checkbox" id="cfg-cols" onchange="applySettings()"><span class="toggle-slider"></span></label>
@@ -797,7 +913,45 @@ body.preview-mode .preview-edit-btn { display: block; }
   </div>
 </div>
 
-<button class="preview-edit-btn" onclick="openEditor()">Edit →</button>
+<div class="preview-float">
+  <!-- Settings widget (expands upward) -->
+  <div class="preview-widget" id="preview-widget">
+    <div class="preview-widget-inner">
+      <div class="pw-row">
+        <span class="pw-label">Size</span>
+        <div class="pw-size-ctrl">
+          <button class="pw-size-btn" onclick="pwSize(-1)">−</button>
+          <span class="pw-size-val" id="pw-size-val">15</span>
+          <button class="pw-size-btn" onclick="pwSize(1)">+</button>
+        </div>
+      </div>
+      <div class="pw-row">
+        <span class="pw-label">Line h.</span>
+        <input class="pw-slider" type="range" id="pw-lh" min="130" max="260" value="190"
+          oninput="pwSync()">
+      </div>
+      <div class="pw-row">
+        <span class="pw-label">Bionic</span>
+        <label class="toggle" style="transform:scale(0.85);transform-origin:right">
+          <input type="checkbox" id="pw-bionic" checked onchange="pwSyncToggle()">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div class="pw-row">
+        <span class="pw-label">Tints</span>
+        <label class="toggle" style="transform:scale(0.85);transform-origin:right">
+          <input type="checkbox" id="pw-tints" checked onchange="pwSyncToggle()">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+  </div>
+  <!-- Bottom bar -->
+  <div class="preview-bottom-bar">
+    <button class="preview-toggle-btn" id="preview-toggle-btn" onclick="togglePreviewWidget()" title="View settings">⚙</button>
+    <button class="preview-edit-btn" onclick="openEditor()">Edit →</button>
+  </div>
+</div>
 
 <!-- Share toast -->
 <div id="share-toast" style="
@@ -831,6 +985,7 @@ function syncLH()     { const v=(document.getElementById('cfg-lh').value/100).to
 function syncWS()     { const v=(document.getElementById('cfg-ws').value*0.01).toFixed(2)+'em'; document.getElementById('val-ws').textContent=v; }
 function syncPG()     { const v=(document.getElementById('cfg-pg').value*0.1).toFixed(1)+'rem';  document.getElementById('val-pg').textContent=v; }
 function syncIndent() { const v=(document.getElementById('cfg-indent').value*0.1).toFixed(1)+'rem'; document.getElementById('val-indent').textContent=v; }
+function syncMargin() { const v=(document.getElementById('cfg-margin').value*0.1).toFixed(1)+'cm'; document.getElementById('val-margin').textContent=v; }
 
 /* ── Apply CSS settings ── */
 function applySettings() {
@@ -841,6 +996,7 @@ function applySettings() {
   const indent = (document.getElementById('cfg-indent').value*0.1).toFixed(1)+'rem';
   const bw     = document.getElementById('cfg-bw').value+'px';
   const font   = document.getElementById('cfg-font').value;
+  const margin = (document.getElementById('cfg-margin').value / 10).toFixed(1);
   const cols   = document.getElementById('cfg-cols').checked;
   const pnums  = document.getElementById('cfg-pnums').checked;
   const top    = (document.getElementById('cfg-tint-op').value/100).toFixed(2);
@@ -851,6 +1007,7 @@ function applySettings() {
     .para::before { display:${pnums?'block':'none'}; }
     .para.is-heading { border-left-width:calc(${bw} * 1.6); }
     :root { --line-1:rgba(192,96,58,${top}); --line-2:rgba(60,100,160,${(parseFloat(top)*0.85).toFixed(2)}); --line-3:rgba(40,130,80,${(parseFloat(top)*0.85).toFixed(2)}); }
+    @page { margin: ${margin}cm; }
     @media print { .output { columns:${cols?2:1}; column-gap:2.5rem; font-size:${size}px; } }
   `;
   updateUrl();
@@ -1006,6 +1163,7 @@ function getSettings() {
     indent:  document.getElementById('cfg-indent').value,
     bw:      document.getElementById('cfg-bw').value,
     font:    document.getElementById('cfg-font').selectedIndex,
+    margin:  document.getElementById('cfg-margin').value,
     cols:    document.getElementById('cfg-cols').checked?1:0,
     pnums:   document.getElementById('cfg-pnums').checked?1:0,
     bionic:  document.getElementById('cfg-bionic').checked?1:0,
@@ -1025,6 +1183,7 @@ function applySettingsFromObj(s) {
   if (s.indent !== undefined) document.getElementById('cfg-indent').value  = s.indent;
   if (s.bw     !== undefined) document.getElementById('cfg-bw').value      = s.bw;
   if (s.font   !== undefined) document.getElementById('cfg-font').selectedIndex = s.font;
+  if (s.margin !== undefined) document.getElementById('cfg-margin').value   = s.margin;
   if (s.cols   !== undefined) document.getElementById('cfg-cols').checked   = s.cols==1;
   if (s.pnums  !== undefined) document.getElementById('cfg-pnums').checked  = s.pnums==1;
   if (s.bionic !== undefined) document.getElementById('cfg-bionic').checked = s.bionic==1;
@@ -1037,6 +1196,7 @@ function applySettingsFromObj(s) {
   syncVal('cfg-size','val-size',1,'px');
   syncLH(); syncWS(); syncPG(); syncIndent();
   syncVal('cfg-bw','val-bw',1,'px');
+  syncMargin();
   syncVal('cfg-bio-int','val-bio-int',1,'%');
   syncVal('cfg-tint-op','val-tint-op',1,'%');
   syncVal('cfg-sim','val-sim',1,'%');
@@ -1044,7 +1204,7 @@ function applySettingsFromObj(s) {
 
 const DEFAULTS = {
   size:'15', lh:'190', ws:'1', pg:'14', indent:'24', bw:'2', font:'0',
-  cols:'0', pnums:'1', bionic:'1', bioint:'50', tints:'1', tintop:'6',
+  margin:'10', cols:'0', pnums:'1', bionic:'1', bioint:'50', tints:'1', tintop:'6',
   repeat:'1', sim:'65'
 };
 
@@ -1100,7 +1260,7 @@ async function initFromUrl() {
   if (params.has('preview')) document.body.classList.add('preview-mode');
 
   // Apply settings from URL
-  const cfgKeys = ['size','lh','ws','pg','indent','bw','font','cols','pnums','bionic','bioint','tints','tintop','repeat','sim'];
+  const cfgKeys = ['size','lh','ws','pg','indent','bw','font','margin','cols','pnums','bionic','bioint','tints','tintop','repeat','sim'];
   const s = {};
   cfgKeys.forEach(k => { if (params.has(k)) s[k] = params.get(k); });
   if (Object.keys(s).length) applySettingsFromObj(s);
@@ -1145,6 +1305,7 @@ async function initFromUrl() {
   }
   applySettings();
   render();
+  syncPreviewWidget();
 }
 
 /* ── Markdown export ── */
@@ -1198,6 +1359,43 @@ document.getElementById('input').addEventListener('input',()=>{
   clearTimeout(timer); timer=setTimeout(()=>{ render(); updateUrl(); },180);
 });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') { closeModal(); closeSongModal(); } });
+
+/* ── Preview widget ── */
+function togglePreviewWidget() {
+  const w = document.getElementById('preview-widget');
+  const b = document.getElementById('preview-toggle-btn');
+  const open = w.classList.toggle('open');
+  b.classList.toggle('active', open);
+}
+
+function pwSize(delta) {
+  const el = document.getElementById('cfg-size');
+  el.value = Math.min(28, Math.max(10, parseInt(el.value) + delta));
+  syncVal('cfg-size','val-size',1,'px');
+  document.getElementById('pw-size-val').textContent = el.value;
+  applySettings();
+}
+
+function pwSync() {
+  // Sync pw-lh → cfg-lh
+  document.getElementById('cfg-lh').value = document.getElementById('pw-lh').value;
+  syncLH();
+  applySettings();
+}
+
+function pwSyncToggle() {
+  document.getElementById('cfg-bionic').checked = document.getElementById('pw-bionic').checked;
+  document.getElementById('cfg-tints').checked  = document.getElementById('pw-tints').checked;
+  render();
+}
+
+function syncPreviewWidget() {
+  const size = document.getElementById('cfg-size').value;
+  document.getElementById('pw-size-val').textContent = size;
+  document.getElementById('pw-lh').value    = document.getElementById('cfg-lh').value;
+  document.getElementById('pw-bionic').checked = document.getElementById('cfg-bionic').checked;
+  document.getElementById('pw-tints').checked  = document.getElementById('cfg-tints').checked;
+}
 
 /* ── Boot ── */
 initFromUrl();
