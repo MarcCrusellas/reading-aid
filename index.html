@@ -872,8 +872,9 @@ body.preview-mode .preview-float { display: flex; }
     grid-template-columns: 1fr;
     flex: 1;
     overflow: hidden;
-    padding-bottom: 56px; /* nav height */
+    padding-bottom: 56px;
   }
+  body.preview-mode .panels { padding-bottom: 0; }
 
   /* Panel visibility driven by body class */
   .panel-left  { display: none; }
@@ -1026,7 +1027,8 @@ body.fc-mode .flashcard-overlay { display: flex; }
 
 @media (max-width: 767px) {
   .fc-card { font-size: 1.15em; }
-  body.fc-mode .mobile-nav { display: none; }
+  body.preview-mode .mobile-nav { display: none !important; }
+body.fc-mode .mobile-nav { display: none; }
 }
 @media print {
   .flashcard-overlay, .hl-picker { display: none !important; }
