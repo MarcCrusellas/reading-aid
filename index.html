@@ -735,10 +735,21 @@ body.preview-mode .preview-float { display: flex; }
   border-color: rgba(192,96,58,0.35); color: var(--accent);
 }
 .note-display {
-  display: block; font-family: 'DM Mono', monospace;
+  font-family: 'DM Mono', monospace;
   font-size: 10px; color: var(--ink-muted); opacity: 0.65;
-  font-style: italic; margin-top: 0.3rem; padding-left: 0.25rem;
+  font-style: italic;
+}
+.note-display.note-below {
+  display: block;
+  margin-top: var(--note-gap, 0.3rem);
+  padding-left: 0.25rem;
   border-left: 2px solid rgba(192,96,58,0.25);
+}
+.note-display.note-right {
+  display: inline;
+  margin-left: var(--note-gap, 0.6rem);
+  border-left: none;
+  padding-left: 0;
 }
 .note-editor-wrap {
   position: fixed; z-index: 200;
@@ -798,6 +809,226 @@ body.preview-mode .preview-float { display: flex; }
   text-decoration: none; flex-shrink: 0;
 }
 .stream-btn:hover { transform: scale(1.08); }
+
+/* ── MOBILE NAV ── */
+.mobile-nav {
+  display: none;
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: 56px;
+  background: var(--paper);
+  border-top: 1px solid var(--border);
+  z-index: 80;
+  align-items: stretch;
+}
+.mobile-nav-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border: none;
+  background: transparent;
+  color: var(--ink-muted);
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.15s;
+  padding: 0;
+}
+.mobile-nav-btn svg { opacity: 0.5; transition: opacity 0.15s; }
+.mobile-nav-btn.active { color: var(--accent); }
+.mobile-nav-btn.active svg { opacity: 1; }
+.mobile-nav-btn:active { background: var(--bg); }
+
+@media (max-width: 767px) {
+  /* Show mobile nav */
+  .mobile-nav { display: flex; }
+
+  /* Stack panels, show one at a time */
+  body { height: 100dvh; }
+
+  .topbar {
+    padding: 0 0.75rem;
+    height: 48px;
+    gap: 0.5rem;
+    flex-wrap: nowrap;
+    overflow: hidden;
+  }
+  .topbar-brand { font-size: 10px; margin-right: 0.5rem; }
+  .title-input { font-size: 12px; margin: 0 0.5rem; }
+  .topbar-right { gap: 0.35rem; }
+  .tb-btn { padding: 0.3rem 0.6rem; font-size: 9.5px; }
+  .tb-btn.primary { padding: 0.3rem 0.7rem; }
+  /* hide markdown btn on mobile topbar */
+  #btn-markdown-top { display: none; }
+
+  .panels {
+    grid-template-columns: 1fr;
+    flex: 1;
+    overflow: hidden;
+    padding-bottom: 56px; /* nav height */
+  }
+
+  /* Panel visibility driven by body class */
+  .panel-left  { display: none; }
+  .panel-right { display: none; }
+  body.mob-edit .panel-left  { display: flex; }
+  body.mob-preview .panel-right { display: flex; }
+  body.mob-settings .panel-left { display: flex; }
+
+  /* On mob-settings, hide textarea, show settings panel */
+  body.mob-settings textarea#input { display: none !important; }
+  body.mob-settings .settings-panel { display: block !important; }
+  /* On mob-edit, show textarea not settings */
+  body.mob-edit .settings-panel { display: none !important; }
+  body.mob-edit textarea#input { display: block !important; }
+
+  /* Bigger touch targets */
+  .cfg-row { min-height: 44px; }
+  .toggle { transform: scale(1.1); }
+  select { padding: 0.4rem 0.5rem; font-size: 11.5px; }
+  input[type=range] { width: 130px; height: 20px; }
+  input[type=range]::-webkit-slider-thumb { width: 20px; height: 20px; }
+
+  /* Mode toggle hide on mobile (replaced by bottom nav) */
+  .mode-toggle { display: none; }
+  .topbar > .tb-btn[onclick*="openSongSearch"] { margin-left: 0; }
+
+  /* Preview float: bigger buttons on mobile */
+  .preview-edit-btn { font-size: 13px; padding: 0.7rem 1.4rem; border-radius: 24px; }
+  .preview-toggle-btn { width: 44px; height: 44px; }
+  .preview-float { bottom: calc(56px + 1rem); right: 1rem; }
+
+  /* Song/GF modals: full width on mobile */
+  .modal { width: 100vw; max-height: 85dvh; border-radius: 16px 16px 0 0; }
+  .modal-backdrop.open { align-items: flex-end; }
+  .song-modal .modal { width: 100vw; }
+
+  /* Settings section bigger */
+  .settings-section { padding: 0.75rem 1rem 0.5rem; }
+  .cfg-label { font-size: 13.5px; }
+
+  /* Note editor wider */
+  .note-editor-wrap { width: min(92vw, 320px); }
+
+  /* Warn modal full width */
+  .warn-modal { width: 92vw; }
+}
+
+/* ── HIGHLIGHTS ── */
+.hl-mark { border-radius: 2px; padding: 0 1px; }
+.hl-picker {
+  position: fixed; z-index: 250;
+  background: var(--paper); border: 1px solid var(--border);
+  border-radius: 6px; box-shadow: 0 4px 16px rgba(0,0,0,0.14);
+  padding: 6px 8px; display: none; gap: 5px; align-items: center;
+}
+.hl-picker.open { display: flex; }
+.hl-swatch {
+  width: 20px; height: 20px; border-radius: 50%; cursor: pointer;
+  border: 2px solid transparent; transition: transform 0.1s, border-color 0.1s;
+  flex-shrink: 0;
+}
+.hl-swatch:hover { transform: scale(1.2); }
+.hl-erase {
+  width: 20px; height: 20px; border-radius: 50%; cursor: pointer;
+  border: 1.5px solid var(--border); background: transparent;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; color: var(--ink-muted); flex-shrink: 0;
+  transition: background 0.1s;
+}
+.hl-erase:hover { background: var(--bg); }
+
+/* ── THEMES ── */
+.theme-swatches {
+  display: flex; gap: 7px; flex-wrap: wrap; padding-top: 4px;
+}
+.theme-swatch {
+  width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
+  border: 2px solid transparent; transition: transform 0.1s, border-color 0.15s;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+}
+.theme-swatch:hover { transform: scale(1.12); }
+.theme-swatch.active { border-color: var(--accent); }
+
+/* ── FLASHCARD ── */
+.flashcard-overlay {
+  display: none;
+  position: fixed; inset: 0; z-index: 70;
+  flex-direction: column;
+  background: var(--fc-paper, var(--paper));
+  color: var(--fc-ink, var(--ink));
+}
+body.fc-mode .flashcard-overlay { display: flex; }
+
+.flashcard-topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+  flex-shrink: 0;
+}
+.fc-title {
+  font-family: 'DM Mono', monospace; font-size: 11px;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  opacity: 0.4;
+}
+.fc-close {
+  font-family: 'DM Mono', monospace; font-size: 10px;
+  background: transparent; border: 1px solid var(--border);
+  border-radius: 3px; padding: 0.3rem 0.7rem; cursor: pointer;
+  color: var(--fc-ink, var(--ink)); letter-spacing: 0.06em; text-transform: uppercase;
+}
+
+.flashcard-body {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  padding: 2rem; overflow: hidden; position: relative;
+}
+.fc-card {
+  max-width: 640px; width: 100%;
+  text-align: center; line-height: 1.9;
+  font-size: 1.3em;
+  animation: fc-in 0.2s ease;
+  color: var(--fc-ink, var(--ink));
+}
+@keyframes fc-in { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+
+.flashcard-nav {
+  display: flex; align-items: center; justify-content: center;
+  gap: 1.5rem; padding: 1.5rem;
+  flex-shrink: 0;
+}
+.fc-nav-btn {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: transparent; border: 1.5px solid var(--border);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  color: var(--fc-ink, var(--ink)); font-size: 16px; transition: background 0.15s;
+}
+.fc-nav-btn:hover { background: rgba(0,0,0,0.06); }
+.fc-nav-btn:disabled { opacity: 0.25; cursor: default; }
+.fc-counter {
+  font-family: 'DM Mono', monospace; font-size: 12px;
+  opacity: 0.45; min-width: 60px; text-align: center;
+}
+.fc-progress {
+  height: 2px; background: var(--border); flex: 1; max-width: 120px;
+  border-radius: 2px; overflow: hidden;
+}
+.fc-progress-fill {
+  height: 100%; background: var(--accent);
+  border-radius: 2px; transition: width 0.2s;
+}
+
+@media (max-width: 767px) {
+  .fc-card { font-size: 1.15em; }
+  body.fc-mode .mobile-nav { display: none; }
+}
+@media print {
+  .flashcard-overlay, .hl-picker { display: none !important; }
+}
 </style>
 </head>
 <body>
@@ -811,7 +1042,9 @@ body.preview-mode .preview-float { display: flex; }
   <button class="tb-btn" style="margin-left:0.6rem;flex-shrink:0" onclick="openSongSearch()">♪ Song</button>
   <input class="title-input" id="doc-title-input" type="text" placeholder="Document title…" oninput="render();updateUrl()">
   <div class="topbar-right">
-    <button class="tb-btn" onclick="openMarkdown()">Markdown ↗</button>
+    <button class="tb-btn" id="btn-markdown-top" onclick="openMarkdown()">Markdown ↗</button>
+    <button class="tb-btn" onclick="openPreview()" title="Open preview">Preview →</button>
+    <button class="tb-btn" onclick="enterFlashcard()">Flash ▷</button>
     <button class="tb-btn" id="btn-share" onclick="shareUrl()">
       <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><circle cx="10" cy="2" r="1.5" stroke="currentColor" stroke-width="1.2"/><circle cx="10" cy="10" r="1.5" stroke="currentColor" stroke-width="1.2"/><circle cx="2" cy="6" r="1.5" stroke="currentColor" stroke-width="1.2"/><line x1="3.4" y1="5.3" x2="8.6" y2="2.7" stroke="currentColor" stroke-width="1.1"/><line x1="3.4" y1="6.7" x2="8.6" y2="9.3" stroke="currentColor" stroke-width="1.1"/></svg>
       Share
@@ -959,6 +1192,42 @@ body.preview-mode .preview-float { display: flex; }
           </div>
         </div>
       </div>
+
+      <div class="settings-section">
+        <div class="section-title">Theme</div>
+        <div class="cfg-row" style="flex-direction:column;align-items:flex-start;gap:0.5rem">
+          <span class="cfg-label" style="font-size:11.5px;opacity:0.7">Output colors (preview &amp; print)</span>
+          <div class="theme-swatches" id="theme-swatches"></div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="section-title">Highlights</div>
+        <div class="cfg-row">
+          <span class="cfg-label">Enable highlights</span>
+          <label class="toggle"><input type="checkbox" id="cfg-hl-on" checked onchange="render()"><span class="toggle-slider"></span></label>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="section-title">Notes</div>
+        <div class="cfg-row">
+          <span class="cfg-label">Note position</span>
+          <select id="cfg-note-pos" onchange="applySettings();render()">
+            <option value="below">Below line</option>
+            <option value="right">Right of line</option>
+          </select>
+        </div>
+        <div class="cfg-row">
+          <span class="cfg-label">Note gap</span>
+          <div class="cfg-control">
+            <input type="range" id="cfg-note-gap" min="0" max="20" value="3"
+              oninput="syncNoteGap();applySettings()">
+            <span class="cfg-val" id="val-note-gap">0.3rem</span>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -1072,6 +1341,18 @@ body.preview-mode .preview-float { display: flex; }
           <span class="toggle-slider"></span>
         </label>
       </div>
+      <div class="pw-row">
+        <span class="pw-label">Notes</span>
+        <select id="pw-note-pos" style="font-size:9.5px;padding:0.2rem 0.35rem" onchange="pwSyncNotes()">
+          <option value="below">Below</option>
+          <option value="right">Right</option>
+        </select>
+      </div>
+      <div class="pw-row">
+        <span class="pw-label">Note gap</span>
+        <input class="pw-slider" type="range" id="pw-note-gap" min="0" max="20" value="3"
+          oninput="pwSyncNotes()">
+      </div>
     </div>
   </div>
   <!-- Streaming links (shown when song meta available) -->
@@ -1134,6 +1415,73 @@ body.preview-mode .preview-float { display: flex; }
   </div>
 </div>
 
+
+<nav class="mobile-nav" id="mobile-nav">
+  <button class="mobile-nav-btn active" id="mob-btn-edit" onclick="setMobileTab('edit')">
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+      <rect x="2" y="2" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.4"/>
+      <line x1="5" y1="6" x2="13" y2="6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+      <line x1="5" y1="9" x2="13" y2="9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+      <line x1="5" y1="12" x2="10" y2="12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+    </svg>
+    Edit
+  </button>
+  <button class="mobile-nav-btn" id="mob-btn-preview" onclick="setMobileTab('preview')">
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+      <circle cx="9" cy="9" r="6.5" stroke="currentColor" stroke-width="1.4"/>
+      <path d="M6.5 9c0-1.38 1.12-2.5 2.5-2.5s2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5S6.5 10.38 6.5 9z" stroke="currentColor" stroke-width="1.3"/>
+    </svg>
+    Preview
+  </button>
+  <button class="mobile-nav-btn" id="mob-btn-flash" onclick="setMobileTab('flash')">
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+      <rect x="2" y="4" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.4"/>
+      <line x1="7" y1="4" x2="7" y2="14" stroke="currentColor" stroke-width="1.2" stroke-dasharray="2 1.5"/>
+      <line x1="11" y1="4" x2="11" y2="14" stroke="currentColor" stroke-width="1.2" stroke-dasharray="2 1.5"/>
+    </svg>
+    Flash
+  </button>
+  <button class="mobile-nav-btn" id="mob-btn-settings" onclick="setMobileTab('settings')">
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+      <line x1="2" y1="5" x2="16" y2="5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+      <line x1="2" y1="9" x2="16" y2="9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+      <line x1="2" y1="13" x2="16" y2="13" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+      <circle cx="6" cy="5" r="1.8" fill="var(--paper)" stroke="currentColor" stroke-width="1.3"/>
+      <circle cx="12" cy="9" r="1.8" fill="var(--paper)" stroke="currentColor" stroke-width="1.3"/>
+      <circle cx="7" cy="13" r="1.8" fill="var(--paper)" stroke="currentColor" stroke-width="1.3"/>
+    </svg>
+    Settings
+  </button>
+</nav>
+
+<!-- Flashcard overlay -->
+<div class="flashcard-overlay" id="flashcard-overlay">
+  <div class="flashcard-topbar">
+    <span class="fc-title" id="fc-doc-title">Flashcard</span>
+    <button class="fc-close" onclick="exitFlashcard()">✕ Exit</button>
+  </div>
+  <div class="flashcard-body">
+    <div class="fc-card" id="fc-card"></div>
+  </div>
+  <div class="flashcard-nav">
+    <button class="fc-nav-btn" id="fc-prev" onclick="fcMove(-1)">←</button>
+    <div class="fc-progress"><div class="fc-progress-fill" id="fc-progress-fill"></div></div>
+    <span class="fc-counter" id="fc-counter">1 / 1</span>
+    <div class="fc-progress"><div class="fc-progress-fill" id="fc-progress-fill2"></div></div>
+    <button class="fc-nav-btn" id="fc-next" onclick="fcMove(1)">→</button>
+  </div>
+</div>
+
+<!-- Highlight color picker -->
+<div class="hl-picker" id="hl-picker">
+  <div class="hl-swatch" style="background:#FFE066" onclick="applyHighlight('#FFE066')" title="Yellow"></div>
+  <div class="hl-swatch" style="background:#A8E6A3" onclick="applyHighlight('#A8E6A3')" title="Green"></div>
+  <div class="hl-swatch" style="background:#A8D8F0" onclick="applyHighlight('#A8D8F0')" title="Blue"></div>
+  <div class="hl-swatch" style="background:#F0A8D0" onclick="applyHighlight('#F0A8D0')" title="Pink"></div>
+  <div class="hl-swatch" style="background:#FFB347" onclick="applyHighlight('#FFB347')" title="Orange"></div>
+  <div class="hl-erase" onclick="applyHighlight(null)" title="Remove">✕</div>
+</div>
+
 <!-- Share toast -->
 <div id="share-toast" style="
   position:fixed; bottom:1.5rem; left:50%; transform:translateX(-50%) translateY(20px);
@@ -1166,6 +1514,7 @@ function syncLH()     { const v=(document.getElementById('cfg-lh').value/100).to
 function syncWS()     { const v=(document.getElementById('cfg-ws').value*0.01).toFixed(2)+'em'; document.getElementById('val-ws').textContent=v; }
 function syncPG()     { const v=(document.getElementById('cfg-pg').value*0.1).toFixed(1)+'rem';  document.getElementById('val-pg').textContent=v; }
 function syncIndent() { const v=(document.getElementById('cfg-indent').value*0.1).toFixed(1)+'rem'; document.getElementById('val-indent').textContent=v; }
+function syncNoteGap() { const v=(document.getElementById('cfg-note-gap').value*0.1).toFixed(1)+'rem'; document.getElementById('val-note-gap').textContent=v; }
 function syncMargin() { const v=(document.getElementById('cfg-margin').value*0.1).toFixed(1)+'cm'; document.getElementById('val-margin').textContent=v; }
 
 /* ── Apply CSS settings ── */
@@ -1180,7 +1529,9 @@ function applySettings() {
   const margin = (document.getElementById('cfg-margin').value / 10).toFixed(1);
   const cols   = document.getElementById('cfg-cols').checked;
   const pnums  = document.getElementById('cfg-pnums').checked;
-  const align  = document.getElementById('cfg-align').value;
+  const align    = document.getElementById('cfg-align').value;
+  const noteGap  = (document.getElementById('cfg-note-gap').value * 0.1).toFixed(1) + 'rem';
+  const notePos  = document.getElementById('cfg-note-pos')?.value || 'below';
   const top    = (document.getElementById('cfg-tint-op').value/100).toFixed(2);
   document.getElementById('dynamic-styles').textContent = `
     .output { font-size:${size}px; line-height:${lh}; font-family:${font}; }
@@ -1188,6 +1539,7 @@ function applySettings() {
     .para { margin-bottom:${pg}; padding-left:${indent}; border-left-width:${bw}; word-spacing:${ws}; text-align:${align}; }
     .para::before { display:${pnums?'block':'none'}; }
     .para.is-heading { border-left-width:calc(${bw} * 1.6); }
+    :root { --note-gap: ${noteGap}; }
     :root { --line-1:rgba(192,96,58,${top}); --line-2:rgba(60,100,160,${(parseFloat(top)*0.85).toFixed(2)}); --line-3:rgba(40,130,80,${(parseFloat(top)*0.85).toFixed(2)}); }
     @page { margin: ${margin}cm; }
     @media print { .output { columns:${cols?2:1}; column-gap:2.5rem; font-size:${size}px; } }
@@ -1253,21 +1605,26 @@ function render() {
   if (!raw.trim()) { out.innerHTML=titleHtml+'<div class="placeholder-msg">Output appears here as you type…</div>'; return; }
   const paras=raw.split(/\n{2,}/).filter(p=>p.trim());
   const repeatMap=useRepeat?findRepeats(paras):{};
+  const hlOn = document.getElementById('cfg-hl-on')?.checked !== false;
+  const notePos = document.getElementById('cfg-note-pos')?.value || 'below';
   const parasHtml=paras.map((para,idx)=>{
     const lines=para.split('\n');
     const isHeading=lines.length===1&&looksLikeHeading(lines[0].trim());
     const linesHtml=lines.map((line,li)=>{
       const key=`${idx}-${li}`;
-      const p=processLine(line.trim(),useBionic&&!isHeading);
-      const withBadge=(li===lines.length-1&&repeatMap[idx])?p+badge(repeatMap[idx].total,repeatMap[idx].others):p;
+      const plain=line.trim();
+      // Apply highlights before bionic
+      const lineHls = hlOn ? (highlights[key]||[]) : [];
+      const renderedText = renderLineHL(plain, lineHls, useBionic&&!isHeading);
+      const withBadge=(li===lines.length-1&&repeatMap[idx])?renderedText+badge(repeatMap[idx].total,repeatMap[idx].others):renderedText;
       const hasNote=!!notes[key];
       const noteBtn=`<button class="note-btn${hasNote?' has-note':''}" onclick="openNote(event,'${key}')" title="${hasNote?'Edit note':'Add note'}">${hasNote?'✎':'+'}&#8203;</button>`;
-      const noteHtml=hasNote?`<span class="note-display">${notes[key].replace(/</g,'&lt;')}</span>`:'';
-      return withBadge+noteBtn+noteHtml;
+      const noteHtml=hasNote?`<span class="note-display note-${notePos}">${notes[key].replace(/</g,'&lt;')}</span>`:'';
+      return `<span class="ln" data-pidx="${idx}" data-lidx="${li}">${withBadge}${noteBtn}${noteHtml}</span>`;
     }).join('<br>');
     const cls=['para',isHeading&&'is-heading',repeatMap[idx]&&'has-repeat'].filter(Boolean).join(' ');
     const noTint=!useTints?' style="background:transparent;border-left-color:transparent"':'';
-    return `<p class="${cls}" data-pnum="${idx+1}"${noTint}>${linesHtml}</p>`;
+    return `<p class="${cls}" data-pnum="${idx+1}" data-pidx="${idx}"${noTint}>${linesHtml}</p>`;
   }).join('');
   out.innerHTML=titleHtml+parasHtml;
 }
@@ -1349,7 +1706,9 @@ function selectSong(i) {
 /* ── URL state ── */
 function getSettings() {
   return {
-    align:   document.getElementById('cfg-align').value,
+    align:     document.getElementById('cfg-align').value,
+    notepos:   document.getElementById('cfg-note-pos')?.value || 'below',
+    notegap:   document.getElementById('cfg-note-gap').value,
     size:    document.getElementById('cfg-size').value,
     lh:      document.getElementById('cfg-lh').value,
     ws:      document.getElementById('cfg-ws').value,
@@ -1371,7 +1730,9 @@ function getSettings() {
 }
 
 function applySettingsFromObj(s) {
-  if (s.align  !== undefined) document.getElementById('cfg-align').value   = s.align;
+  if (s.align   !== undefined) document.getElementById('cfg-align').value    = s.align;
+  if (s.notepos !== undefined && document.getElementById('cfg-note-pos')) document.getElementById('cfg-note-pos').value = s.notepos;
+  if (s.notegap !== undefined) { document.getElementById('cfg-note-gap').value = s.notegap; syncNoteGap(); }
   if (s.size   !== undefined) document.getElementById('cfg-size').value    = s.size;
   if (s.lh     !== undefined) document.getElementById('cfg-lh').value      = s.lh;
   if (s.ws     !== undefined) document.getElementById('cfg-ws').value      = s.ws;
@@ -1405,7 +1766,7 @@ function applySettingsFromObj(s) {
 }
 
 const DEFAULTS = {
-  align:'left',
+  align:'left', notepos:'below', notegap:'3',
   size:'15', lh:'190', ws:'1', pg:'14', indent:'24', bw:'2', font:'0',
   margin:'10', cols:'0', pnums:'1', bionic:'1', bioint:'50', tints:'1', tintop:'6',
   repeat:'1', sim:'65'
@@ -1424,6 +1785,9 @@ function buildParams(includePreview) {
   }
   if (Object.keys(notes).length > 0)
     params.set('notes', LZString.compressToEncodedURIComponent(JSON.stringify(notes)));
+  if (Object.keys(highlights).length > 0)
+    params.set('hl', LZString.compressToEncodedURIComponent(JSON.stringify(highlights)));
+  if (currentThemeIdx !== 0) params.set('theme', currentThemeIdx);
   Object.entries(cfg).forEach(([k,v]) => {
     if (String(v) !== String(DEFAULTS[k])) params.set(k, v);
   });
@@ -1480,13 +1844,20 @@ async function initFromUrl() {
   if (params.has('preview')) document.body.classList.add('preview-mode');
 
   // Apply settings from URL
-  const cfgKeys = ['align','size','lh','ws','pg','indent','bw','font','gfont','margin','cols','pnums','bionic','bioint','tints','tintop','repeat','sim'];
+  const cfgKeys = ['align','notepos','notegap','size','lh','ws','pg','indent','bw','font','gfont','margin','cols','pnums','bionic','bioint','tints','tintop','repeat','sim'];
   const s = {};
   cfgKeys.forEach(k => { if (params.has(k)) s[k] = params.get(k); });
   if (Object.keys(s).length) applySettingsFromObj(s);
 
   // Title
   if (params.has('title')) document.getElementById('doc-title-input').value = params.get('title');
+
+  // Highlights
+  if (params.has('hl')) {
+    try { const p=JSON.parse(LZString.decompressFromEncodedURIComponent(params.get('hl'))); if(p) highlights=p; } catch(e){}
+  }
+  // Theme
+  if (params.has('theme')) { currentThemeIdx=parseInt(params.get('theme'))||0; }
 
   // Song meta (for streaming links)
   if (params.has('artist') && params.has('track'))
@@ -1543,6 +1914,9 @@ async function initFromUrl() {
   render();
   syncPreviewWidget();
   updateStreamingLinks();
+  initMobile();
+  initThemeSwatches();
+  if (currentThemeIdx) applyTheme(currentThemeIdx);
 }
 
 /* ── Markdown export ── */
@@ -1614,6 +1988,243 @@ document.getElementById('input').addEventListener('focus', () => {
   lastInputVal = document.getElementById('input').value;
 });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') { closeModal(); closeSongModal(); closeGFModal(); } });
+
+/* ── Preview button (desktop) ── */
+function openPreview() {
+  const params = buildParams(true);
+  location.href = location.pathname + '?' + params.toString();
+}
+
+
+/* ── THEMES ── */
+const THEMES = [
+  {name:'Default',   paper:'#faf8f4', ink:'#1a1814', accent:'#c0603a', l1:'rgba(192,96,58,0.06)',  l2:'rgba(60,100,160,0.05)',  l3:'rgba(40,130,80,0.05)'},
+  {name:'Sepia',     paper:'#f5efe0', ink:'#3a2c14', accent:'#8b6914', l1:'rgba(139,105,20,0.08)', l2:'rgba(139,105,20,0.05)', l3:'rgba(139,105,20,0.03)'},
+  {name:'Night',     paper:'#1e1e1e', ink:'#e0d8c8', accent:'#c0603a', l1:'rgba(255,255,255,0.04)',l2:'rgba(255,255,255,0.03)',l3:'rgba(255,255,255,0.02)'},
+  {name:'Slate',     paper:'#eef2f6', ink:'#1a2332', accent:'#3a6ea8', l1:'rgba(58,110,168,0.07)', l2:'rgba(58,110,168,0.04)', l3:'rgba(40,130,80,0.04)'},
+  {name:'Forest',    paper:'#f0f4f0', ink:'#1a2a1a', accent:'#4a8a5a', l1:'rgba(74,138,90,0.07)',  l2:'rgba(74,138,90,0.04)',  l3:'rgba(60,100,160,0.04)'},
+  {name:'Rose',      paper:'#fdf0f2', ink:'#2a1a1e', accent:'#c04060', l1:'rgba(192,64,96,0.06)',  l2:'rgba(192,64,96,0.04)',  l3:'rgba(60,100,160,0.04)'},
+];
+let currentThemeIdx = 0;
+
+function initThemeSwatches() {
+  const wrap = document.getElementById('theme-swatches');
+  if (!wrap) return;
+  wrap.innerHTML = THEMES.map((t,i) =>
+    `<div class="theme-swatch${i===currentThemeIdx?' active':''}" style="background:${t.paper};border:2px solid ${t.ink}22"
+      onclick="applyTheme(${i})" title="${t.name}"></div>`
+  ).join('');
+}
+
+function applyTheme(idx) {
+  currentThemeIdx = idx;
+  const t = THEMES[idx];
+  const out = document.getElementById('output');
+  out.style.background = t.paper;
+  out.style.color = t.ink;
+  const fc = document.getElementById('flashcard-overlay');
+  fc.style.setProperty('--fc-paper', t.paper);
+  fc.style.setProperty('--fc-ink', t.ink);
+  // Update CSS variables for tints
+  const ds = document.getElementById('dynamic-styles');
+  const cur = ds.textContent;
+  // Re-apply settings which regenerates the CSS vars
+  applySettings();
+  initThemeSwatches();
+}
+
+/* ── HIGHLIGHTS ── */
+let highlights = {}; // key: 'pidx-lidx', value: [{s,e,color}]
+let pendingHlSel = null;
+
+function renderLineHL(plain, lineHls, useBionic) {
+  if (!lineHls.length) return processLine(plain, useBionic);
+  const map = new Array(plain.length).fill(null);
+  for (const h of lineHls) for (let i=h.s;i<h.e;i++) map[i]=h.c;
+  let result='', i=0;
+  while (i<plain.length) {
+    const col=map[i];
+    let j=i;
+    if (col) {
+      while (j<plain.length && map[j]===col) j++;
+      result += `<mark class="hl-mark" style="background:${col}">${processLine(plain.slice(i,j),useBionic)}</mark>`;
+    } else {
+      while (j<plain.length && !map[j]) j++;
+      result += processLine(plain.slice(i,j),useBionic);
+    }
+    i=j;
+  }
+  return result;
+}
+
+function getSelectionInfo() {
+  const sel = window.getSelection();
+  if (!sel || sel.isCollapsed) return null;
+  const range = sel.getRangeAt(0);
+  const lnEl = range.startContainer.nodeType===3
+    ? range.startContainer.parentElement?.closest('.ln')
+    : range.startContainer.closest?.('.ln');
+  if (!lnEl) return null;
+  const pidx = parseInt(lnEl.dataset.pidx);
+  const lidx = parseInt(lnEl.dataset.lidx);
+  // Get char offsets within the plain text of this line
+  const raw = document.getElementById('input').value;
+  const paras = raw.split(/\n{2,}/).filter(p=>p.trim());
+  const para = paras[pidx];
+  if (!para) return null;
+  const lines = para.split('\n');
+  const plain = lines[lidx]?.trim() || '';
+  // Use text content of ln element (strip HTML) to map offset
+  const lnText = lnEl.textContent;
+  const selText = sel.toString();
+  const start = lnText.indexOf(selText);
+  if (start < 0) return null;
+  // Map from lnText position to plain text position (they may differ due to note text appended)
+  const plainStart = Math.min(start, plain.length);
+  const plainEnd   = Math.min(start + selText.length, plain.length);
+  return {key:`${pidx}-${lidx}`, s:plainStart, e:plainEnd};
+}
+
+document.getElementById('output').addEventListener('pointerup', e => {
+  setTimeout(() => {
+    const info = getSelectionInfo();
+    if (!info) { closeHlPicker(); return; }
+    pendingHlSel = info;
+    const picker = document.getElementById('hl-picker');
+    const x = Math.min(e.clientX, window.innerWidth - 180);
+    const y = e.clientY - 48;
+    picker.style.left = x + 'px';
+    picker.style.top  = (y < 10 ? e.clientY + 8 : y) + 'px';
+    picker.classList.add('open');
+  }, 10);
+});
+
+document.addEventListener('pointerdown', e => {
+  if (!document.getElementById('hl-picker').contains(e.target))
+    closeHlPicker();
+});
+
+function closeHlPicker() {
+  document.getElementById('hl-picker').classList.remove('open');
+  pendingHlSel = null;
+}
+
+function applyHighlight(color) {
+  if (!pendingHlSel) return;
+  const {key, s, e} = pendingHlSel;
+  if (!highlights[key]) highlights[key] = [];
+  if (!color) {
+    // Remove highlights overlapping this range
+    highlights[key] = highlights[key].filter(h => h.e<=s || h.s>=e);
+  } else {
+    // Remove overlapping, add new
+    highlights[key] = highlights[key].filter(h => h.e<=s || h.s>=e);
+    highlights[key].push({s, e, c:color});
+  }
+  closeHlPicker();
+  window.getSelection()?.removeAllRanges();
+  render();
+  updateUrl();
+}
+
+/* ── FLASHCARD ── */
+let fcCards = [];
+let fcIdx = 0;
+let fcTouchStartX = 0;
+
+function buildFcCards() {
+  const raw = document.getElementById('input').value.trim();
+  if (!raw) return [];
+  return raw.split(/\n{2,}/).filter(p=>p.trim());
+}
+
+function enterFlashcard() {
+  fcCards = buildFcCards();
+  if (!fcCards.length) return;
+  fcIdx = 0;
+  document.body.classList.add('fc-mode');
+  const title = document.getElementById('doc-title-input').value.trim();
+  document.getElementById('fc-doc-title').textContent = title || 'Flashcard';
+  renderFcCard();
+  if (window.innerWidth < 768) {
+    document.getElementById('mob-btn-flash')?.classList.add('active');
+    ['mob-btn-edit','mob-btn-preview','mob-btn-settings'].forEach(id =>
+      document.getElementById(id)?.classList.remove('active'));
+  }
+}
+
+function exitFlashcard() {
+  document.body.classList.remove('fc-mode');
+  if (window.innerWidth < 768) setMobileTab('edit');
+}
+
+function renderFcCard() {
+  const useBionic = document.getElementById('cfg-bionic').checked;
+  const para = fcCards[fcIdx];
+  const lines = para.split('\n');
+  const isHeading = lines.length===1 && looksLikeHeading(lines[0].trim());
+  const html = lines.map(l => processLine(l.trim(), useBionic&&!isHeading)).join('<br>');
+  document.getElementById('fc-card').innerHTML = html;
+  document.getElementById('fc-card').style.fontWeight = isHeading ? '700' : '';
+  document.getElementById('fc-counter').textContent = `${fcIdx+1} / ${fcCards.length}`;
+  const pct = ((fcIdx+1)/fcCards.length*100).toFixed(0)+'%';
+  document.getElementById('fc-progress-fill').style.width  = pct;
+  document.getElementById('fc-progress-fill2').style.width = pct;
+  document.getElementById('fc-prev').disabled = fcIdx===0;
+  document.getElementById('fc-next').disabled = fcIdx===fcCards.length-1;
+}
+
+function fcMove(dir) {
+  fcIdx = Math.max(0, Math.min(fcCards.length-1, fcIdx+dir));
+  renderFcCard();
+}
+
+// Keyboard
+document.addEventListener('keydown', e => {
+  if (!document.body.classList.contains('fc-mode')) return;
+  if (e.key==='ArrowRight'||e.key==='ArrowDown') fcMove(1);
+  if (e.key==='ArrowLeft'||e.key==='ArrowUp')  fcMove(-1);
+  if (e.key==='Escape') exitFlashcard();
+});
+
+// Touch swipe
+document.getElementById('flashcard-overlay').addEventListener('touchstart', e => {
+  fcTouchStartX = e.touches[0].clientX;
+}, {passive:true});
+document.getElementById('flashcard-overlay').addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - fcTouchStartX;
+  if (Math.abs(dx)>50) fcMove(dx<0?1:-1);
+});
+
+/* ── THEME + HL in URL ── */
+
+/* ── Mobile tab navigation ── */
+function setMobileTab(tab) {
+  if (tab === 'flash') { enterFlashcard(); return; }
+  document.body.classList.remove('mob-edit','mob-preview','mob-settings');
+  document.body.classList.add('mob-' + tab);
+  ['edit','preview','settings','flash'].forEach(t => {
+    document.getElementById('mob-btn-'+t)?.classList.toggle('active', t===tab);
+  });
+  if (tab === 'edit' || tab === 'settings') {
+    setMode(tab === 'settings' ? 'cfg' : 'edit');
+  }
+}
+
+function initMobile() {
+  if (window.innerWidth < 768) {
+    // Start on edit tab unless in preview mode
+    if (document.body.classList.contains('preview-mode')) {
+      // preview-mode hides left panel already, mobile nav still useful
+      document.body.classList.add('mob-preview');
+      document.getElementById('mob-btn-preview')?.classList.add('active');
+      document.getElementById('mob-btn-edit')?.classList.remove('active');
+    } else {
+      setMobileTab('edit');
+    }
+  }
+}
+
 
 /* ── Notes ── */
 let notes = {};
@@ -1827,6 +2438,16 @@ function pwSync() {
   applySettings();
 }
 
+function pwSyncNotes() {
+  const pos = document.getElementById('pw-note-pos').value;
+  const gap = document.getElementById('pw-note-gap').value;
+  if (document.getElementById('cfg-note-pos')) document.getElementById('cfg-note-pos').value = pos;
+  document.getElementById('cfg-note-gap').value = gap;
+  syncNoteGap();
+  applySettings();
+  render();
+}
+
 function pwSyncToggle() {
   document.getElementById('cfg-bionic').checked = document.getElementById('pw-bionic').checked;
   document.getElementById('cfg-tints').checked  = document.getElementById('pw-tints').checked;
@@ -1839,6 +2460,8 @@ function syncPreviewWidget() {
   document.getElementById('pw-lh').value    = document.getElementById('cfg-lh').value;
   document.getElementById('pw-bionic').checked = document.getElementById('cfg-bionic').checked;
   document.getElementById('pw-tints').checked  = document.getElementById('cfg-tints').checked;
+  if (document.getElementById('cfg-note-pos')) document.getElementById('pw-note-pos').value = document.getElementById('cfg-note-pos').value;
+  document.getElementById('pw-note-gap').value = document.getElementById('cfg-note-gap').value;
 }
 
 /* ── Boot ── */
