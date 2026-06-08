@@ -128,40 +128,7 @@ body {
 }
 .panel-left { border-right: 1px solid var(--border); background: #f4f0e8; }
 
-/* ── SEARCH BAR ── */
-.search-bar {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0 1rem 0.5rem;
-  flex-shrink: 0;
-}
-.search-input {
-  flex: 1;
-  background: var(--paper);
-  border: 1px solid var(--border);
-  border-radius: 3px;
-  padding: 0.3rem 0.6rem;
-  font-family: 'DM Mono', monospace;
-  font-size: 11px;
-  color: var(--ink);
-  outline: none;
-  transition: border-color 0.2s;
-}
-.search-input:focus { border-color: var(--accent); }
-.search-input::placeholder { color: #b8b0a4; }
-.search-status {
-  font-family: 'DM Mono', monospace;
-  font-size: 9.5px;
-  color: var(--ink-muted);
-  opacity: 0.5;
-  min-width: 60px;
-  text-align: right;
-  white-space: nowrap;
-}
-.search-status.loading { color: var(--accent); opacity: 1; }
-.search-status.error   { color: #c04040; opacity: 1; }
-.search-status.ok      { color: #3a7a4a; opacity: 1; }
+
 
 /* ── TEXTAREA ── */
 textarea#input {
@@ -392,6 +359,155 @@ select {
 }
 .copy-confirm.show { opacity: 1; }
 
+/* ── SONG SEARCH MODAL ── */
+.song-modal .modal { width: min(520px, 92vw); max-height: 80vh; }
+.song-step { display: none; flex-direction: column; }
+.song-step.active { display: flex; }
+
+.song-search-row {
+  display: flex;
+  gap: 8px;
+  padding: 1rem;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.song-search-row input {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0.4rem 0.7rem;
+  font-family: 'Atkinson Hyperlegible', Georgia, serif;
+  font-size: 13px;
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.2s;
+}
+.song-search-row input:focus { border-color: var(--accent); }
+.song-search-row input::placeholder { color: #b8b0a4; }
+
+.song-results {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem 0.75rem 1rem;
+}
+
+.song-empty {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--ink-muted);
+  opacity: 0.35;
+  padding: 1.5rem 0.5rem;
+  text-align: center;
+}
+
+.song-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.12s;
+  border-bottom: 1px solid var(--border);
+}
+.song-card:last-child { border-bottom: none; }
+.song-card:hover { background: var(--bg); }
+
+.song-card-info { flex: 1; min-width: 0; }
+.song-card-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.song-card-meta {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--ink-muted);
+  opacity: 0.6;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.song-card-link {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--accent);
+  text-decoration: none;
+  opacity: 0.7;
+  flex-shrink: 0;
+  padding: 2px 4px;
+}
+.song-card-link:hover { opacity: 1; }
+.song-card-no-lyrics {
+  opacity: 0.4;
+  pointer-events: none;
+}
+.song-status {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--ink-muted);
+  padding: 0 1rem 0.4rem;
+  min-height: 1.2em;
+  flex-shrink: 0;
+}
+.song-status.loading { color: var(--accent); }
+.song-status.error   { color: #c04040; }
+
+/* ── PREVIEW MODE ── */
+body.preview-mode .topbar,
+body.preview-mode .panel-left { display: none !important; }
+
+body.preview-mode .panels {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  background: #ddd8ce;
+  padding: 2.5rem 2rem;
+  overflow-y: auto;
+}
+
+body.preview-mode .panel-right {
+  width: 100%;
+  max-width: 740px;
+  height: auto;
+  min-height: calc(100vh - 5rem);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 6px 32px rgba(0,0,0,0.12);
+  overflow: visible;
+}
+
+body.preview-mode .panel-label { display: none; }
+
+body.preview-mode .output { padding: 2.5rem 3rem 4rem; }
+
+.preview-edit-btn {
+  display: none;
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 50;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  padding: 0.4rem 0.85rem;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transition: background 0.15s;
+}
+.preview-edit-btn:hover { background: var(--bg); }
+body.preview-mode .preview-edit-btn { display: block; }
+
 /* ── PRINT ── */
 @media print {
   body { display: block; height: auto; overflow: visible; background: white; }
@@ -415,7 +531,8 @@ select {
     <button class="mode-btn active" id="btn-edit" onclick="setMode('edit')">Edit</button>
     <button class="mode-btn" id="btn-cfg" onclick="setMode('cfg')">Settings</button>
   </div>
-  <input class="title-input" id="doc-title-input" type="text" placeholder="Document title…" oninput="render()">
+  <button class="tb-btn" style="margin-left:0.6rem;flex-shrink:0" onclick="openSongSearch()">♪ Song</button>
+  <input class="title-input" id="doc-title-input" type="text" placeholder="Document title…" oninput="render();updateUrl()">
   <div class="topbar-right">
     <button class="tb-btn" onclick="openMarkdown()">Markdown ↗</button>
     <button class="tb-btn" id="btn-share" onclick="shareUrl()">
@@ -431,13 +548,6 @@ select {
   <!-- LEFT -->
   <div class="panel panel-left">
     <div class="panel-label" id="left-label">Input</div>
-
-    <div class="search-bar" id="search-bar">
-      <input class="search-input" id="search-input" type="text"
-        placeholder="Search song lyrics… (artist – title)"
-        onkeydown="if(event.key==='Enter')searchLyrics()">
-      <span class="search-status" id="search-status"></span>
-    </div>
 
     <textarea id="input" placeholder="Paste your text here…&#10;&#10;Blank line = new paragraph.&#10;Single line breaks are preserved."></textarea>
 
@@ -567,6 +677,36 @@ select {
   </div>
 </div>
 
+<!-- Song search modal -->
+<div class="modal-backdrop song-modal" id="song-modal" onclick="if(event.target===this)closeSongModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <span id="song-modal-title">Search song</span>
+      <div class="modal-actions">
+        <span class="song-status" id="song-status"></span>
+        <button class="tb-btn" id="song-back-btn" onclick="songStep(1)" style="display:none">← Back</button>
+        <button class="tb-btn" onclick="closeSongModal()">✕</button>
+      </div>
+    </div>
+
+    <!-- Step 1: search input -->
+    <div class="song-step active" id="song-step-1">
+      <div class="song-search-row">
+        <input id="song-query" type="text" placeholder="Artist, song title…"
+          onkeydown="if(event.key==='Enter')doSongSearch()">
+        <button class="tb-btn primary" onclick="doSongSearch()">Search</button>
+      </div>
+    </div>
+
+    <!-- Step 2: results -->
+    <div class="song-step" id="song-step-2">
+      <div class="song-results" id="song-results">
+        <div class="song-empty">No results yet</div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Markdown modal -->
 <div class="modal-backdrop" id="modal" onclick="if(event.target===this)closeModal()">
   <div class="modal">
@@ -583,6 +723,8 @@ select {
     </div>
   </div>
 </div>
+
+<button class="preview-edit-btn" onclick="openEditor()">Edit →</button>
 
 <!-- Share toast -->
 <div id="share-toast" style="
@@ -601,7 +743,6 @@ select {
 function setMode(mode) {
   const isEdit = mode === 'edit';
   document.getElementById('input').style.display            = isEdit ? '' : 'none';
-  document.getElementById('search-bar').style.display       = isEdit ? '' : 'none';
   document.getElementById('settings-panel').classList.toggle('active', !isEdit);
   document.getElementById('btn-edit').classList.toggle('active', isEdit);
   document.getElementById('btn-cfg').classList.toggle('active', !isEdit);
@@ -639,6 +780,7 @@ function applySettings() {
     :root { --line-1:rgba(192,96,58,${top}); --line-2:rgba(60,100,160,${(parseFloat(top)*0.85).toFixed(2)}); --line-3:rgba(40,130,80,${(parseFloat(top)*0.85).toFixed(2)}); }
     @media print { .output { columns:${cols?2:1}; column-gap:2.5rem; font-size:${size}px; } }
   `;
+  updateUrl();
 }
 
 /* ── Bionic ── */
@@ -709,31 +851,74 @@ function render() {
   out.innerHTML=titleHtml+parasHtml;
 }
 
-/* ── Song lyrics search ── */
-async function searchLyrics() {
-  const query = document.getElementById('search-input').value.trim();
+/* ── Song search modal ── */
+let songResults = [];
+
+function openSongSearch() {
+  document.getElementById('song-modal').classList.add('open');
+  songStep(1);
+  setTimeout(() => document.getElementById('song-query').focus(), 60);
+}
+function closeSongModal() { document.getElementById('song-modal').classList.remove('open'); }
+
+function songStep(n) {
+  document.getElementById('song-step-1').classList.toggle('active', n===1);
+  document.getElementById('song-step-2').classList.toggle('active', n===2);
+  document.getElementById('song-back-btn').style.display = n===2 ? '' : 'none';
+  document.getElementById('song-modal-title').textContent = n===1 ? 'Search song' : 'Select a result';
+}
+
+function fmtDuration(s) {
+  if (!s) return '';
+  const m = Math.floor(s/60), sec = String(s%60).padStart(2,'0');
+  return `${m}:${sec}`;
+}
+
+async function doSongSearch() {
+  const query = document.getElementById('song-query').value.trim();
   if (!query) return;
-  const status = document.getElementById('search-status');
-  status.textContent = 'Searching…';
-  status.className = 'search-status loading';
+  const status = document.getElementById('song-status');
+  status.textContent = 'Searching…'; status.className = 'song-status loading';
   try {
     const res = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(query)}`);
-    if (!res.ok) throw new Error('API error');
-    const results = await res.json();
-    if (!results.length) { status.textContent = 'Not found'; status.className='search-status error'; return; }
-    // Pick first result with plain lyrics
-    const match = results.find(r => r.plainLyrics) || results[0];
-    if (!match.plainLyrics) { status.textContent = 'No lyrics'; status.className='search-status error'; return; }
-    document.getElementById('input').value = match.plainLyrics.trim();
-    if (!document.getElementById('doc-title-input').value)
-      document.getElementById('doc-title-input').value = `${match.artistName} — ${match.trackName}`;
-    render();
-    status.textContent = '✓ Loaded';
-    status.className = 'search-status ok';
-    setTimeout(()=>{ status.textContent=''; status.className='search-status'; }, 3000);
+    if (!res.ok) throw new Error();
+    songResults = await res.json();
+    status.textContent = ''; status.className = 'song-status';
+    if (!songResults.length) {
+      document.getElementById('song-results').innerHTML = '<div class="song-empty">No results found</div>';
+    } else {
+      document.getElementById('song-results').innerHTML = songResults.map((r,i) => {
+        const hasLyrics = !!r.plainLyrics;
+        const meta = [r.artistName, r.albumName, fmtDuration(r.duration)].filter(Boolean).join(' · ');
+        const mbUrl = `https://musicbrainz.org/search?query=${encodeURIComponent(r.trackName+' '+r.artistName)}&type=recording`;
+        return `<div class="song-card${hasLyrics?'':' song-card-no-lyrics'}" onclick="${hasLyrics?`selectSong(${i})`:''}">
+          <div class="song-card-info">
+            <div class="song-card-title">${r.trackName}</div>
+            <div class="song-card-meta">${meta}${hasLyrics?'':' · no lyrics'}</div>
+          </div>
+          <a class="song-card-link" href="${mbUrl}" target="_blank" onclick="event.stopPropagation()" title="Search on MusicBrainz">↗</a>
+        </div>`;
+      }).join('');
+    }
+    songStep(2);
   } catch(e) {
-    status.textContent = 'Error'; status.className='search-status error';
+    status.textContent = 'Error — try again'; status.className = 'song-status error';
   }
+}
+
+let currentSongId = null;
+let originalLyrics = '';
+
+function selectSong(i) {
+  const r = songResults[i];
+  currentSongId = r.id;
+  originalLyrics = r.plainLyrics.trim();
+  document.getElementById('input').value = originalLyrics;
+  if (!document.getElementById('doc-title-input').value)
+    document.getElementById('doc-title-input').value = `${r.artistName} — ${r.trackName}`;
+  render();
+  updateUrl();
+  closeSongModal();
 }
 
 /* ── URL state ── */
@@ -782,14 +967,24 @@ function applySettingsFromObj(s) {
   syncVal('cfg-sim','val-sim',1,'%');
 }
 
-function shareUrl() {
+function buildParams(includePreview) {
   const text  = document.getElementById('input').value;
   const title = document.getElementById('doc-title-input').value;
   const cfg   = getSettings();
   const params = new URLSearchParams();
-  if (text)  params.set('t', LZString.compressToEncodedURIComponent(text));
+  if (currentSongId && text.trim() === originalLyrics.trim()) {
+    params.set('lrcid', currentSongId);
+  } else if (text) {
+    params.set('t', LZString.compressToEncodedURIComponent(text));
+  }
   if (title) params.set('title', title);
   Object.entries(cfg).forEach(([k,v]) => params.set(k, v));
+  if (includePreview) params.set('preview', '1');
+  return params;
+}
+
+function shareUrl() {
+  const params = buildParams(true);
   const url = location.origin + location.pathname + '?' + params.toString();
   navigator.clipboard.writeText(url).then(() => {
     const toast = document.getElementById('share-toast');
@@ -798,8 +993,28 @@ function shareUrl() {
   });
 }
 
+let urlTimer;
+function updateUrl() {
+  clearTimeout(urlTimer);
+  urlTimer = setTimeout(() => {
+    const params = buildParams(false);
+    try {
+      history.replaceState(null, '', location.pathname + '?' + params.toString());
+    } catch(e) {}
+  }, 500);
+}
+
+function openEditor() {
+  const params = new URLSearchParams(location.search);
+  params.delete('preview');
+  location.href = location.pathname + (params.toString() ? '?' + params.toString() : '');
+}
+
 async function initFromUrl() {
   const params = new URLSearchParams(location.search);
+
+  // Preview mode
+  if (params.has('preview')) document.body.classList.add('preview-mode');
 
   // Apply settings from URL
   const cfgKeys = ['size','lh','ws','pg','indent','bw','font','cols','pnums','bionic','bioint','tints','tintop','repeat','sim'];
@@ -815,24 +1030,35 @@ async function initFromUrl() {
     const text = LZString.decompressFromEncodedURIComponent(params.get('t'));
     if (text) document.getElementById('input').value = text;
   }
-  // Song name lookup
+  // Song by lrclib ID
+  else if (params.has('lrcid')) {
+    try {
+      const res = await fetch(`https://lrclib.net/api/get/${params.get('lrcid')}`);
+      const r = await res.json();
+      if (r.plainLyrics) {
+        currentSongId = r.id;
+        originalLyrics = r.plainLyrics.trim();
+        document.getElementById('input').value = originalLyrics;
+        if (!document.getElementById('doc-title-input').value)
+          document.getElementById('doc-title-input').value = `${r.artistName} — ${r.trackName}`;
+      }
+    } catch(e) {}
+  }
+  // Song by name (legacy ?song= param)
   else if (params.has('song')) {
     const query = params.get('song').replace(/-/g,' ');
-    document.getElementById('search-input').value = query;
-    const status = document.getElementById('search-status');
-    status.textContent = 'Loading…'; status.className='search-status loading';
     try {
       const res = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(query)}`);
       const results = await res.json();
-      const match = results.find(r=>r.plainLyrics)||results[0];
-      if (match?.plainLyrics) {
-        document.getElementById('input').value = match.plainLyrics.trim();
+      const r = results.find(r=>r.plainLyrics)||results[0];
+      if (r?.plainLyrics) {
+        currentSongId = r.id;
+        originalLyrics = r.plainLyrics.trim();
+        document.getElementById('input').value = originalLyrics;
         if (!document.getElementById('doc-title-input').value)
-          document.getElementById('doc-title-input').value = `${match.artistName} — ${match.trackName}`;
-        status.textContent='✓ Loaded'; status.className='search-status ok';
-        setTimeout(()=>{ status.textContent=''; status.className='search-status'; },3000);
+          document.getElementById('doc-title-input').value = `${r.artistName} — ${r.trackName}`;
       }
-    } catch(e) { status.textContent='Error'; status.className='search-status error'; }
+    } catch(e) {}
   }
   applySettings();
   render();
@@ -886,9 +1112,9 @@ function copyMarkdown() {
 /* ── Live input ── */
 let timer;
 document.getElementById('input').addEventListener('input',()=>{
-  clearTimeout(timer); timer=setTimeout(render,180);
+  clearTimeout(timer); timer=setTimeout(()=>{ render(); updateUrl(); },180);
 });
-document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeModal(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') { closeModal(); closeSongModal(); } });
 
 /* ── Boot ── */
 initFromUrl();
