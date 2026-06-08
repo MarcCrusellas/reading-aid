@@ -542,7 +542,7 @@ body.preview-mode .panel-right {
 
 body.preview-mode .panel-label { display: none; }
 
-body.preview-mode .output { padding: 2.5rem 3rem 4rem; }
+body.preview-mode .output { padding: var(--pw-padding, 2.5rem 3rem 4rem); }
 
 /* Preview mode floating UI */
 .preview-float {
@@ -779,6 +779,24 @@ body.preview-mode .preview-float { display: flex; }
   .note-display { opacity: 0.55; }
   .note-editor-wrap, .warn-modal-backdrop { display: none !important; }
 }
+
+/* Streaming buttons in preview */
+.preview-stream-row {
+  display: none;
+  gap: 0.4rem;
+  margin-bottom: 0.25rem;
+  justify-content: flex-end;
+}
+.preview-stream-row.visible { display: flex; }
+.stream-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px; border-radius: 8px;
+  border: none; cursor: pointer; padding: 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  transition: transform 0.15s, opacity 0.15s;
+  text-decoration: none; flex-shrink: 0;
+}
+.stream-btn:hover { transform: scale(1.08); }
 </style>
 </head>
 <body>
@@ -1032,6 +1050,14 @@ body.preview-mode .preview-float { display: flex; }
           oninput="pwSync()">
       </div>
       <div class="pw-row">
+        <span class="pw-label">Margins</span>
+        <div class="pw-size-ctrl">
+          <button class="pw-size-btn" onclick="pwMargin(-1)">−</button>
+          <span class="pw-size-val" id="pw-margin-val">4</span>
+          <button class="pw-size-btn" onclick="pwMargin(1)">+</button>
+        </div>
+      </div>
+      <div class="pw-row">
         <span class="pw-label">Bionic</span>
         <label class="toggle" style="transform:scale(0.85);transform-origin:right">
           <input type="checkbox" id="pw-bionic" checked onchange="pwSyncToggle()">
@@ -1047,9 +1073,24 @@ body.preview-mode .preview-float { display: flex; }
       </div>
     </div>
   </div>
+  <!-- Streaming links (shown when song meta available) -->
+  <div class="preview-stream-row" id="preview-stream-row">
+    <a class="stream-btn" id="stream-spotify" href="#" target="_blank" title="Open in Spotify">
+      <svg width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#1DB954"/><path fill="white" d="M17.9 10.9C14.7 9 9.35 8.8 6.3 9.75c-.5.15-1-.15-1.15-.6-.15-.5.15-1 .6-1.15 3.55-1.05 9.4-.85 13.1 1.35.45.25.6.85.35 1.3-.25.35-.85.5-1.3.25zm-.1 2.8c-.25.35-.75.5-1.1.25-2.7-1.65-6.8-2.15-9.95-1.15-.4.1-.85-.1-.95-.5-.1-.4.1-.85.5-.95 3.65-1.1 8.15-.55 11.25 1.35.3.15.45.65.25 1zm-1.25 2.65c-.2.3-.6.4-.9.2-2.35-1.45-5.3-1.75-8.8-.95-.35.1-.65-.15-.75-.45-.1-.35.15-.65.45-.75 3.8-.85 7.1-.5 9.7 1.1.35.15.4.55.3.85z"/></svg>
+    </a>
+    <a class="stream-btn" id="stream-apple" href="#" target="_blank" title="Open in Apple Music">
+      <svg width="24" height="24" viewBox="0 0 24 24"><defs><linearGradient id="amg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#FC3C44"/><stop offset="100%" stop-color="#F94F58"/></linearGradient></defs><rect width="24" height="24" rx="6" fill="url(#amg)"/><path fill="white" d="M16.5 7.25l-5.5 1v5.5a2 2 0 1 0 1 1.73V11l4-.73V8.5l-4 .75V9l4.5-.84V7.25zM9 16a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/></svg>
+    </a>
+  </div>
   <!-- Bottom bar -->
   <div class="preview-bottom-bar">
-    <button class="preview-toggle-btn" id="preview-toggle-btn" onclick="togglePreviewWidget()" title="View settings">⚙</button>
+    <button class="preview-toggle-btn" id="preview-toggle-btn" onclick="togglePreviewWidget()" title="View settings">
+      <svg width="14" height="11" viewBox="0 0 14 11" fill="none">
+        <line x1="1" y1="1.5" x2="13" y2="1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="1" y1="5.5" x2="13" y2="5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="1" y1="9.5" x2="13" y2="9.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </button>
     <button class="preview-edit-btn" onclick="openEditor()">Edit →</button>
   </div>
 </div>
@@ -1289,11 +1330,13 @@ async function doSongSearch() {
 
 let currentSongId = null;
 let originalLyrics = '';
+let currentSongMeta = null; // {artist, track}
 
 function selectSong(i) {
   const r = songResults[i];
   currentSongId = r.id;
   originalLyrics = r.plainLyrics.trim();
+  currentSongMeta = {artist: r.artistName, track: r.trackName};
   document.getElementById('input').value = originalLyrics;
   if (!document.getElementById('doc-title-input').value)
     document.getElementById('doc-title-input').value = `${r.artistName} — ${r.trackName}`;
@@ -1372,12 +1415,14 @@ function buildParams(includePreview) {
   const title = document.getElementById('doc-title-input').value;
   const cfg   = getSettings();
   const params = new URLSearchParams();
-  if (currentSongId && text.trim() === originalLyrics.trim() && Object.keys(notes).length === 0) {
-    params.set('lrcid', currentSongId);
-  } else if (text) {
-    params.set('t', LZString.compressToEncodedURIComponent(text));
-  }
+  if (text) params.set('t', LZString.compressToEncodedURIComponent(text));
   if (title) params.set('title', title);
+  if (currentSongMeta) {
+    params.set('artist', currentSongMeta.artist);
+    params.set('track',  currentSongMeta.track);
+  }
+  if (Object.keys(notes).length > 0)
+    params.set('notes', LZString.compressToEncodedURIComponent(JSON.stringify(notes)));
   Object.entries(cfg).forEach(([k,v]) => {
     if (String(v) !== String(DEFAULTS[k])) params.set(k, v);
   });
@@ -1396,6 +1441,20 @@ function shareUrl() {
 }
 
 let urlTimer;
+
+function updateStreamingLinks() {
+  const row = document.getElementById('preview-stream-row');
+  if (!row) return;
+  if (currentSongMeta && document.body.classList.contains('preview-mode')) {
+    const q = encodeURIComponent(`${currentSongMeta.artist} ${currentSongMeta.track}`);
+    document.getElementById('stream-spotify').href = `https://open.spotify.com/search/${q}`;
+    document.getElementById('stream-apple').href   = `https://music.apple.com/search?term=${q}`;
+    row.classList.add('visible');
+  } else {
+    row.classList.remove('visible');
+  }
+}
+
 function updateUrl() {
   clearTimeout(urlTimer);
   urlTimer = setTimeout(() => {
@@ -1427,6 +1486,18 @@ async function initFromUrl() {
   // Title
   if (params.has('title')) document.getElementById('doc-title-input').value = params.get('title');
 
+  // Song meta (for streaming links)
+  if (params.has('artist') && params.has('track'))
+    currentSongMeta = {artist: params.get('artist'), track: params.get('track')};
+
+  // Notes
+  if (params.has('notes')) {
+    try {
+      const parsed = JSON.parse(LZString.decompressFromEncodedURIComponent(params.get('notes')));
+      if (parsed && typeof parsed === 'object') notes = parsed;
+    } catch(e) {}
+  }
+
   // Text (encoded)
   if (params.has('t')) {
     const text = LZString.decompressFromEncodedURIComponent(params.get('t'));
@@ -1440,9 +1511,12 @@ async function initFromUrl() {
       if (r.plainLyrics) {
         currentSongId = r.id;
         originalLyrics = r.plainLyrics.trim();
+        currentSongMeta = {artist: r.artistName, track: r.trackName};
         document.getElementById('input').value = originalLyrics;
         if (!document.getElementById('doc-title-input').value)
           document.getElementById('doc-title-input').value = `${r.artistName} — ${r.trackName}`;
+        // Replace lrcid in URL with full text
+        setTimeout(updateUrl, 800);
       }
     } catch(e) {}
   }
@@ -1456,6 +1530,7 @@ async function initFromUrl() {
       if (r?.plainLyrics) {
         currentSongId = r.id;
         originalLyrics = r.plainLyrics.trim();
+        currentSongMeta = {artist: r.artistName, track: r.trackName};
         document.getElementById('input').value = originalLyrics;
         if (!document.getElementById('doc-title-input').value)
           document.getElementById('doc-title-input').value = `${r.artistName} — ${r.trackName}`;
@@ -1465,6 +1540,7 @@ async function initFromUrl() {
   applySettings();
   render();
   syncPreviewWidget();
+  updateStreamingLinks();
 }
 
 /* ── Markdown export ── */
@@ -1720,6 +1796,15 @@ function pwSize(delta) {
   syncVal('cfg-size','val-size',1,'px');
   document.getElementById('pw-size-val').textContent = el.value;
   applySettings();
+}
+
+let pwMarginVal = 4; // 0-8 steps, maps to rem values
+
+function pwMargin(delta) {
+  pwMarginVal = Math.min(8, Math.max(0, pwMarginVal + delta));
+  document.getElementById('pw-margin-val').textContent = pwMarginVal;
+  const p = pwMarginVal === 0 ? '0' : `${pwMarginVal * 0.4}rem ${pwMarginVal * 0.5}rem ${pwMarginVal * 0.6}rem`;
+  document.documentElement.style.setProperty('--pw-padding', p);
 }
 
 function pwSync() {
