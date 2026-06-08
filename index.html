@@ -549,8 +549,8 @@ body.preview-mode .output { padding: var(--pw-padding, 2.5rem 3rem 4rem); }
 .preview-float {
   display: none;
   position: fixed;
-  bottom: 1.25rem;
-  right: 1.25rem;
+  bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
+  right: calc(1.25rem + env(safe-area-inset-right, 0px));
   z-index: 50;
   flex-direction: column;
   align-items: flex-end;
@@ -562,25 +562,34 @@ body.preview-mode .preview-float { display: flex; }
 .preview-widget {
   background: var(--paper);
   border: 1px solid var(--border);
-  border-radius: 6px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
-  width: 200px;
+  border-radius: 14px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  width: 240px;
   overflow: hidden;
   max-height: 0;
   opacity: 0;
-  transition: max-height 0.25s ease, opacity 0.2s ease;
+  transition: max-height 0.3s ease, opacity 0.2s ease;
   pointer-events: none;
 }
 .preview-widget.open {
-  max-height: 320px;
+  max-height: 420px;
   opacity: 1;
   pointer-events: auto;
 }
 .preview-widget-inner {
-  padding: 0.85rem 1rem 1rem;
+  padding: 1rem 1.1rem 1.1rem;
   display: flex;
   flex-direction: column;
-  gap: 0.7rem;
+  gap: 0.85rem;
+}
+.pw-section-title {
+  font-family: 'DM Mono', monospace;
+  font-size: 8.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  opacity: 0.45;
+  margin-bottom: -0.25rem;
 }
 .pw-row {
   display: flex;
@@ -589,53 +598,54 @@ body.preview-mode .preview-float { display: flex; }
   gap: 0.5rem;
 }
 .pw-label {
-  font-family: 'DM Mono', monospace;
-  font-size: 10px;
+  font-family: 'Atkinson Hyperlegible', Georgia, serif;
+  font-size: 12px;
   color: var(--ink-muted);
   flex-shrink: 0;
-  min-width: 56px;
+  min-width: 60px;
 }
 .pw-size-ctrl {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
 }
 .pw-size-btn {
   font-family: 'DM Mono', monospace;
-  font-size: 11px;
+  font-size: 13px;
   color: var(--ink-muted);
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 3px;
-  width: 22px; height: 22px;
+  border-radius: 6px;
+  width: 28px; height: 28px;
   display: flex; align-items: center; justify-content: center;
   cursor: pointer;
   line-height: 1;
   padding: 0;
 }
-.pw-size-btn:hover { background: var(--border); }
+.pw-size-btn:active { background: var(--border); }
 .pw-size-val {
   font-family: 'DM Mono', monospace;
-  font-size: 10px;
+  font-size: 12px;
   color: var(--ink);
-  min-width: 22px;
+  min-width: 24px;
   text-align: center;
 }
 .pw-slider {
   -webkit-appearance: none;
   flex: 1;
-  height: 3px;
+  height: 4px;
   background: var(--border);
-  border-radius: 2px;
+  border-radius: 4px;
   outline: none;
   cursor: pointer;
 }
 .pw-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 12px; height: 12px;
+  width: 18px; height: 18px;
   border-radius: 50%;
   background: var(--accent);
   cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
 }
 
 /* Bottom bar: toggle + edit */
@@ -908,7 +918,7 @@ body.preview-mode .preview-float { display: flex; }
   /* Preview float: bigger buttons on mobile */
   .preview-edit-btn { font-size: 13px; padding: 0.7rem 1.4rem; border-radius: 24px; }
   .preview-toggle-btn { width: 44px; height: 44px; }
-  .preview-float { bottom: calc(56px + 1rem); right: 1rem; }
+  body.preview-mode .preview-float { bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px)); right: 1rem; }
 
   /* Song/GF modals: full width on mobile */
   .modal { width: 100vw; max-height: 85dvh; border-radius: 16px 16px 0 0; }
@@ -921,6 +931,16 @@ body.preview-mode .preview-float { display: flex; }
 
   /* Note editor wider */
   .note-editor-wrap { width: min(92vw, 320px); }
+  /* Preview widget full-width on mobile */
+  .preview-widget {
+    width: calc(100vw - 2.5rem);
+    border-radius: 16px;
+  }
+  .pw-label { font-size: 14px; }
+  .pw-size-btn { width: 36px; height: 36px; font-size: 16px; border-radius: 8px; }
+  .pw-size-val { font-size: 14px; }
+  .pw-slider { height: 5px; }
+  .pw-slider::-webkit-slider-thumb { width: 22px; height: 22px; }
 
   /* Warn modal full width */
   .warn-modal { width: 92vw; }
@@ -1366,10 +1386,16 @@ body.fc-mode .mobile-nav { display: none; }
   <!-- Streaming links (shown when song meta available) -->
   <div class="preview-stream-row" id="preview-stream-row">
     <a class="stream-btn" id="stream-spotify" href="#" target="_blank" title="Open in Spotify">
-      <svg width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#1DB954"/><path fill="white" d="M17.9 10.9C14.7 9 9.35 8.8 6.3 9.75c-.5.15-1-.15-1.15-.6-.15-.5.15-1 .6-1.15 3.55-1.05 9.4-.85 13.1 1.35.45.25.6.85.35 1.3-.25.35-.85.5-1.3.25zm-.1 2.8c-.25.35-.75.5-1.1.25-2.7-1.65-6.8-2.15-9.95-1.15-.4.1-.85-.1-.95-.5-.1-.4.1-.85.5-.95 3.65-1.1 8.15-.55 11.25 1.35.3.15.45.65.25 1zm-1.25 2.65c-.2.3-.6.4-.9.2-2.35-1.45-5.3-1.75-8.8-.95-.35.1-.65-.15-.75-.45-.1-.35.15-.65.45-.75 3.8-.85 7.1-.5 9.7 1.1.35.15.4.55.3.85z"/></svg>
+      <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="12" cy="12" r="12" fill="#1DB954"/>
+        <path fill="white" d="M6 9.5c3.3-1 7.5-.8 10.5 1 .4.3.5.8.2 1.2-.3.4-.8.5-1.1.2C13 10.3 9.3 10.1 6.6 11c-.5.2-1-.1-1.1-.6C5.3 10 5.6 9.6 6 9.5zm.2 2.8c2.8-.8 6.3-.6 9 .9.4.2.5.7.2 1-.2.3-.6.4-1 .2-2.3-1.4-5.5-1.6-8-.8-.4.1-.8-.1-.9-.5-.1-.3.2-.7.7-.8zm.3 2.7c2.2-.7 5-.5 7.2.7.3.2.4.5.2.9-.2.3-.6.4-.9.2-1.9-1.1-4.3-1.3-6.3-.6-.4.1-.7-.1-.8-.4-.1-.4.2-.7.6-.8z"/>
+      </svg>
     </a>
     <a class="stream-btn" id="stream-apple" href="#" target="_blank" title="Open in Apple Music">
-      <svg width="24" height="24" viewBox="0 0 24 24"><defs><linearGradient id="amg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#FC3C44"/><stop offset="100%" stop-color="#F94F58"/></linearGradient></defs><rect width="24" height="24" rx="6" fill="url(#amg)"/><path fill="white" d="M16.5 7.25l-5.5 1v5.5a2 2 0 1 0 1 1.73V11l4-.73V8.5l-4 .75V9l4.5-.84V7.25zM9 16a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/></svg>
+      <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <rect width="24" height="24" rx="5" fill="#FC3C44"/>
+        <path fill="white" d="M16.5 7.5v6.8a2.2 2.2 0 1 1-1.5-2.1V9.2l-4 .9v5.1a2.2 2.2 0 1 1-1.5-2.1V8.3z"/>
+      </svg>
     </a>
   </div>
   <!-- Bottom bar -->
@@ -1862,9 +1888,12 @@ function updateUrl() {
 }
 
 function openEditor() {
+  document.body.classList.remove('preview-mode');
   const params = getUrlParams();
   params.delete('preview');
-  location.href = location.pathname + '#' + params.toString();
+  try { history.replaceState(null, '', location.pathname + '#' + params.toString()); } catch(e) {}
+  // Switch to edit tab on mobile
+  if (window.innerWidth < 768) setMobileTab('edit');
 }
 
 async function initFromUrl() {
