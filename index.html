@@ -1754,8 +1754,8 @@ async function loadEspeak() {
   espeakState = 'loading';
   setIpaStatus('Loading…', 'loading');
   try {
-    console.log('IPA: importing ' + IPA_BASE + 'phonemizer.js');
-    const mod = await import(IPA_BASE + 'phonemizer.js');
+    console.log('IPA: importing ' + IPA_BASE + 'phonemizer.js?v=2');
+    const mod = await import(IPA_BASE + 'phonemizer.js?v=2');
     console.log('IPA: module imported, has phonemize=' + (typeof mod.phonemize));
     espeakMod = mod;
     console.log('IPA: running test phonemize…');
@@ -1770,6 +1770,7 @@ async function loadEspeak() {
     setIpaStatus('Unavailable', 'error');
     console.error('IPA load failed at step. name=' + (e&&e.name) + ' message=' + (e&&e.message));
     if (e && e.stack) console.error('stack: ' + e.stack);
+    render(); // clear any 'transcribing…' placeholders
   }
 }
 
@@ -1928,6 +1929,8 @@ function onPronChange() {
   if (voiceOn && !voiceReady) initVoice();
   if (voiceOn) { refreshVoiceList(); checkVoiceAvailability(); }
   render();
+  updateUrl();
+  updateUrl();
 }
 
 /* ── Bionic ── */
