@@ -1631,8 +1631,11 @@ body.fc-mode .mobile-nav { display: none; }
 const _dbgBuffer = [];
 function dbgWrite(type, args) {
   const msg = '[' + type + '] ' + args.map(a => {
-    try { return typeof a === 'object' ? JSON.stringify(a) : String(a); }
-    catch(e) { return String(a); }
+    try {
+      if (a instanceof Error) return a.message + (a.stack ? '\n' + a.stack : '');
+      if (typeof a === 'object') { const j = JSON.stringify(a); return (j === '{}' && a.message) ? a.message : j; }
+      return String(a);
+    } catch(e) { return String(a); }
   }).join(' ');
   _dbgBuffer.push(msg);
   if (_dbgBuffer.length > 300) _dbgBuffer.shift();
@@ -1751,11 +1754,13 @@ async function loadEspeak() {
   espeakState = 'loading';
   setIpaStatus('Loading…', 'loading');
   try {
-    // Vendored phonemizer-style espeak-ng. Expects ./lib/phonemizer.js exporting phonemize().
+    console.log('IPA: importing ' + IPA_BASE + 'phonemizer.js');
     const mod = await import(IPA_BASE + 'phonemizer.js');
+    console.log('IPA: module imported, has phonemize=' + (typeof mod.phonemize));
     espeakMod = mod;
-    // sanity check
-    await mod.phonemize('test', 'en-us');
+    console.log('IPA: running test phonemize…');
+    const test = await mod.phonemize('test', 'en-us');
+    console.log('IPA: test result = ' + JSON.stringify(test));
     espeakReady = true;
     espeakState = 'ready';
     setIpaStatus('Ready ✓', 'ready');
@@ -1763,7 +1768,8 @@ async function loadEspeak() {
   } catch (e) {
     espeakState = 'error';
     setIpaStatus('Unavailable', 'error');
-    console.warn('IPA engine not available (add files to ./lib/):', e);
+    console.error('IPA load failed at step. name=' + (e&&e.name) + ' message=' + (e&&e.message));
+    if (e && e.stack) console.error('stack: ' + e.stack);
   }
 }
 
