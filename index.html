@@ -733,6 +733,36 @@ body.preview-mode .preview-float { display: flex; }
   color: var(--ink-muted); opacity: 0.45; text-transform: uppercase;
 }
 
+/* ── IPA PRONUNCIATION ── */
+.ipa-line {
+  display: block;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.72em;
+  color: #3a6ea8;
+  margin-top: 0.2rem;
+  letter-spacing: 0.02em;
+  opacity: 0.85;
+}
+.ipa-line::before { content: '🔊 '; font-size: 0.85em; opacity: 0.5; }
+.ipa-line { animation: ipa-fade 0.3s ease; }
+@keyframes ipa-fade { from { opacity: 0; } to { opacity: 0.85; } }
+.ipa-line.ipa-loading { color: var(--ink-muted); opacity: 0.4; font-style: italic; animation: ipa-pulse 1.2s ease-in-out infinite; }
+.ipa-line.ipa-loading::before { content: '⋯ '; }
+.voice-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; border-radius: 50%;
+  border: 1px solid rgba(60,100,160,0.4); background: rgba(60,100,160,0.08);
+  color: #3a6ea8; font-size: 8px; cursor: pointer;
+  margin-left: 6px; vertical-align: middle; flex-shrink: 0;
+  opacity: 0.55; transition: opacity 0.15s, background 0.15s; line-height: 1; padding: 0;
+}
+.para:hover .voice-btn { opacity: 0.9; }
+.voice-btn:hover { opacity: 1; background: rgba(60,100,160,0.18); }
+.voice-btn.playing { background: #3a6ea8; color: white; }
+@media print { .voice-btn { display: none !important; } }
+@keyframes ipa-pulse { 0%,100% { opacity: 0.3; } 50% { opacity: 0.6; } }
+@media print { .ipa-line.ipa-loading { display: none !important; } }
+
 /* ── NOTES ── */
 .note-btn {
   display: inline-flex; align-items: center; justify-content: center;
@@ -743,6 +773,8 @@ body.preview-mode .preview-float { display: flex; }
   margin-left: 6px; flex-shrink: 0; line-height: 1;
 }
 .para:hover .note-btn { opacity: 0.6; }
+.pnote-btn { border-color: rgba(192,96,58,0.4); }
+.pnote-display { border-left-color: rgba(192,96,58,0.45) !important; font-weight: 500; }
 .note-btn:hover { opacity: 1 !important; background: var(--bg); }
 .note-btn.has-note {
   opacity: 0.85 !important; background: rgba(192,96,58,0.1);
@@ -1238,6 +1270,48 @@ body.fc-mode .mobile-nav { display: none; }
       </div>
 
       <div class="settings-section">
+        <div class="section-title">Pronunciation help</div>
+        <div style="font-size:11.5px;color:var(--ink-muted);opacity:0.75;line-height:1.5;margin-bottom:0.75rem">
+          For songs in another language. Show the phonetic spelling (IPA) under each line, and/or add a play button to hear each line read aloud.
+        </div>
+        <div class="cfg-row">
+          <span class="cfg-label">Show IPA</span>
+          <label class="toggle"><input type="checkbox" id="cfg-ipa-on" onchange="onPronChange()"><span class="toggle-slider"></span></label>
+        </div>
+        <div class="cfg-row">
+          <span class="cfg-label">Voice playback</span>
+          <label class="toggle"><input type="checkbox" id="cfg-voice-on" onchange="onPronChange()"><span class="toggle-slider"></span></label>
+        </div>
+        <div id="pron-config" style="display:none">
+          <div class="cfg-row">
+            <span class="cfg-label">Language</span>
+            <select id="cfg-ipa-lang" onchange="onIpaLangChange()">
+              <option value="fr">French</option>
+              <option value="es">Spanish</option>
+              <option value="en-us">English (US)</option>
+              <option value="en-gb">English (UK)</option>
+              <option value="it">Italian</option>
+              <option value="de">German</option>
+              <option value="pt">Portuguese</option>
+              <option value="ca">Catalan</option>
+            </select>
+          </div>
+          <div class="cfg-row" id="ipa-status-row" style="display:none">
+            <span class="cfg-label" style="font-size:11px;opacity:0.7">IPA engine</span>
+            <span id="ipa-status" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--ink-muted)">—</span>
+          </div>
+          <div class="cfg-row" id="voice-status-row" style="display:none">
+            <span class="cfg-label" style="font-size:11px;opacity:0.7">Voice</span>
+            <span id="voice-status" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--ink-muted)">—</span>
+          </div>
+          <div class="cfg-row" id="voice-picker-row" style="display:none">
+            <span class="cfg-label">Voice</span>
+            <select id="cfg-voice-name" onchange="onVoicePick()" style="max-width:150px"></select>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
         <div class="section-title">Notes</div>
         <div class="cfg-row">
           <span class="cfg-label">Note position</span>
@@ -1516,6 +1590,17 @@ body.fc-mode .mobile-nav { display: none; }
   <div class="hl-erase" onclick="applyHighlight(null)" title="Remove">✕</div>
 </div>
 
+<!-- Voice mismatch popup -->
+<div class="warn-modal-backdrop" id="voice-warn-modal">
+  <div class="warn-modal">
+    <div class="warn-modal-msg" id="voice-warn-msg"></div>
+    <div class="warn-modal-actions">
+      <button class="tb-btn" onclick="closeVoiceWarn()">Keep default</button>
+      <button class="tb-btn primary" onclick="openVoicePickerFromWarn()">Choose voice</button>
+    </div>
+  </div>
+</div>
+
 <!-- Share toast -->
 <div id="share-toast" style="
   position:fixed; bottom:1.5rem; left:50%; transform:translateX(-50%) translateY(20px);
@@ -1535,6 +1620,7 @@ function setMode(mode) {
   document.getElementById('input').style.display            = isEdit ? '' : 'none';
   document.getElementById('settings-panel').classList.toggle('active', !isEdit);
   document.getElementById('btn-edit').classList.toggle('active', isEdit);
+  if (mode === 'cfg' && document.getElementById('cfg-voice-on')?.checked) { refreshVoiceList(); checkVoiceAvailability(); }
   document.getElementById('btn-cfg').classList.toggle('active', !isEdit);
   document.getElementById('left-label').textContent = isEdit ? 'Input' : 'Settings';
 }
@@ -1587,6 +1673,193 @@ function applySettings() {
     @media print { .output { columns:${cols?2:1}; column-gap:2.5rem; font-size:${size}px; } }
   `;
   updateUrl();
+}
+
+/* ── Pronunciation engines ──
+   IPA: espeak-ng WASM, vendored locally at ./lib/ (works on your host, same-origin).
+   Voice: browser Web Speech API (no files needed). */
+
+const IPA_BASE = './lib/';   // place espeak-ng files here in your repo
+let espeakReady = false, espeakState = 'idle', espeakMod = null;
+const ipaCache = {};
+const ipaPending = new Set();
+
+async function loadEspeak() {
+  if (espeakState === 'loading' || espeakState === 'ready') return;
+  espeakState = 'loading';
+  setIpaStatus('Loading…', 'loading');
+  try {
+    // Vendored phonemizer-style espeak-ng. Expects ./lib/phonemizer.js exporting phonemize().
+    const mod = await import(IPA_BASE + 'phonemizer.js');
+    espeakMod = mod;
+    // sanity check
+    await mod.phonemize('test', 'en-us');
+    espeakReady = true;
+    espeakState = 'ready';
+    setIpaStatus('Ready ✓', 'ready');
+    render();
+  } catch (e) {
+    espeakState = 'error';
+    setIpaStatus('Unavailable', 'error');
+    console.warn('IPA engine not available (add files to ./lib/):', e);
+  }
+}
+
+function setIpaStatus(text, cls) {
+  const el = document.getElementById('ipa-status');
+  if (!el) return;
+  el.textContent = text;
+  el.style.color = cls === 'ready' ? '#3a7a4a' : cls === 'error' ? '#c04040'
+    : cls === 'loading' ? 'var(--accent)' : 'var(--ink-muted)';
+}
+
+function lineToIpa(line, lang) {
+  const text = line.trim();
+  if (!text) return '';
+  const key = lang + '::' + text;
+  if (ipaCache[key] !== undefined) return ipaCache[key];
+  if (espeakState === 'error') return '';
+  if (espeakState !== 'ready') return null;
+  if (ipaPending.has(key)) return null;
+  ipaPending.add(key);
+  espeakMod.phonemize(text, lang).then(res => {
+    const ipa = Array.isArray(res) ? res.join(' ') : String(res);
+    ipaCache[key] = ipa ? '[' + ipa.trim() + ']' : '';
+    ipaPending.delete(key);
+    scheduleIpaRerender();
+  }).catch(() => {
+    ipaCache[key] = '';
+    ipaPending.delete(key);
+    scheduleIpaRerender();
+  });
+  return null;
+}
+
+let ipaRerenderTimer = null;
+function scheduleIpaRerender() {
+  clearTimeout(ipaRerenderTimer);
+  ipaRerenderTimer = setTimeout(render, 120);
+}
+
+/* ── Voice (Web Speech API) ── */
+let voiceReady = false;
+const VOICE_LANG_MAP = { 'fr':'fr-FR','es':'es-ES','en-us':'en-US','en-gb':'en-GB','it':'it-IT','de':'de-DE','pt':'pt-PT','ca':'ca-ES' };
+
+function initVoice() {
+  if (!('speechSynthesis' in window)) {
+    voiceReady = false;
+    setVoiceStatus('Not supported', 'error');
+    return;
+  }
+  voiceReady = true;
+  setVoiceStatus('Ready ✓', 'ready');
+  refreshVoiceList();
+  // Some browsers populate voices asynchronously
+  window.speechSynthesis.onvoiceschanged = () => { refreshVoiceList(); checkVoiceAvailability(); };
+}
+
+function setVoiceStatus(text, cls) {
+  const el = document.getElementById('voice-status');
+  if (!el) return;
+  el.textContent = text;
+  el.style.color = cls === 'ready' ? '#3a7a4a' : cls === 'error' ? '#c04040' : 'var(--ink-muted)';
+}
+
+function speakLine(text, btn) {
+  if (!voiceReady || !text.trim()) return;
+  const lang = document.getElementById('cfg-ipa-lang')?.value || 'fr';
+  const bcp = VOICE_LANG_MAP[lang] || 'fr-FR';
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = bcp;
+  u.rate = 0.85;
+  availableVoices = window.speechSynthesis.getVoices();
+  const match = pickVoiceObject(bcp, lang.split('-')[0]);
+  if (match) u.voice = match;
+  if (btn) { btn.classList.add('playing'); u.onend = () => btn.classList.remove('playing'); u.onerror = () => btn.classList.remove('playing'); }
+  window.speechSynthesis.speak(u);
+}
+
+let selectedVoiceName = '';   // stored preference (may come from URL)
+let availableVoices = [];
+
+function refreshVoiceList() {
+  if (!('speechSynthesis' in window)) return;
+  availableVoices = window.speechSynthesis.getVoices();
+  const sel = document.getElementById('cfg-voice-name');
+  if (!sel) return;
+  const lang = document.getElementById('cfg-ipa-lang')?.value || 'fr';
+  const base = lang.split('-')[0];
+  // Show voices matching the current language first, then the rest
+  const matching = availableVoices.filter(v => v.lang.toLowerCase().startsWith(base));
+  const others   = availableVoices.filter(v => !v.lang.toLowerCase().startsWith(base));
+  const opt = v => `<option value="${v.name.replace(/"/g,'&quot;')}"${v.name===selectedVoiceName?' selected':''}>${v.name} (${v.lang})</option>`;
+  sel.innerHTML = '<option value="">Default for language</option>'
+    + (matching.length ? `<optgroup label="${base.toUpperCase()}">${matching.map(opt).join('')}</optgroup>` : '')
+    + (others.length ? `<optgroup label="Other">${others.map(opt).join('')}</optgroup>` : '');
+}
+
+function onVoicePick() {
+  selectedVoiceName = document.getElementById('cfg-voice-name').value;
+  updateUrl();
+}
+
+function pickVoiceObject(bcp, base) {
+  // Prefer explicitly chosen voice if present
+  if (selectedVoiceName) {
+    const v = availableVoices.find(v => v.name === selectedVoiceName);
+    if (v) return v;
+  }
+  return availableVoices.find(v => v.lang === bcp)
+      || availableVoices.find(v => v.lang.toLowerCase().startsWith(base));
+}
+
+// Check on settings open whether a URL-specified voice is actually available
+let voiceWarnShown = false;
+function checkVoiceAvailability() {
+  if (voiceWarnShown) return;
+  if (!selectedVoiceName) return;
+  if (!('speechSynthesis' in window)) return;
+  availableVoices = window.speechSynthesis.getVoices();
+  if (availableVoices.length === 0) return; // not loaded yet; will recheck
+  const has = availableVoices.some(v => v.name === selectedVoiceName);
+  if (!has) {
+    voiceWarnShown = true;
+    document.getElementById('voice-warn-msg').textContent =
+      `This link was shared with a specific voice ("${selectedVoiceName}") that isn't installed on your device. The default voice will be used instead — you can pick another below.`;
+    document.getElementById('voice-warn-modal').classList.add('open');
+  }
+}
+
+function closeVoiceWarn() {
+  document.getElementById('voice-warn-modal').classList.remove('open');
+}
+
+function openVoicePickerFromWarn() {
+  closeVoiceWarn();
+  // Ensure voice features visible + jump to settings
+  document.getElementById('cfg-voice-on').checked = true;
+  onPronChange();
+  refreshVoiceList();
+  if (window.innerWidth < 768) setMobileTab('settings'); else setMode('cfg');
+  document.getElementById('cfg-voice-name')?.focus();
+}
+
+function onIpaLangChange() { refreshVoiceList(); render(); }
+
+
+function onPronChange() {
+  const ipaOn   = document.getElementById('cfg-ipa-on').checked;
+  const voiceOn = document.getElementById('cfg-voice-on').checked;
+  const anyOn = ipaOn || voiceOn;
+  document.getElementById('pron-config').style.display = anyOn ? 'block' : 'none';
+  document.getElementById('ipa-status-row').style.display   = ipaOn ? 'flex' : 'none';
+  document.getElementById('voice-status-row').style.display = voiceOn ? 'flex' : 'none';
+  document.getElementById('voice-picker-row').style.display = voiceOn ? 'flex' : 'none';
+  if (ipaOn && espeakState === 'idle') loadEspeak();
+  if (voiceOn && !voiceReady) initVoice();
+  if (voiceOn) { refreshVoiceList(); checkVoiceAvailability(); }
+  render();
 }
 
 /* ── Bionic ── */
@@ -1649,6 +1922,9 @@ function render() {
   const repeatMap=useRepeat?findRepeats(paras):{};
   const hlOn = document.getElementById('cfg-hl-on')?.checked !== false;
   const notePos = document.getElementById('cfg-note-pos')?.value || 'below';
+  const ipaOn = document.getElementById('cfg-ipa-on')?.checked === true;
+  const voiceOn = document.getElementById('cfg-voice-on')?.checked === true;
+  const ipaLang = document.getElementById('cfg-ipa-lang')?.value || 'fr';
   const parasHtml=paras.map((para,idx)=>{
     const lines=para.split('\n');
     const isHeading=lines.length===1&&looksLikeHeading(lines[0].trim());
@@ -1662,11 +1938,17 @@ function render() {
       const hasNote=!!notes[key];
       const noteBtn=`<button class="note-btn${hasNote?' has-note':''}" onclick="openNote(event,'${key}')" title="${hasNote?'Edit note':'Add note'}">${hasNote?'✎':'+'}&#8203;</button>`;
       const noteHtml=hasNote?`<span class="note-display note-${notePos}">${notes[key].replace(/</g,'&lt;')}</span>`:'';
-      return `<span class="ln" data-pidx="${idx}" data-lidx="${li}">${withBadge}${noteBtn}${noteHtml}</span>`;
+      const ipaHtml=ipaOn?(()=>{const s=lineToIpa(plain,ipaLang);if(s===null)return plain?`<span class="ipa-line ipa-loading">transcribing…</span>`:'';return s?`<span class="ipa-line">${s}</span>`:'';})():'';
+      const voiceBtn=(voiceOn&&plain)?`<button class="voice-btn" onclick="speakLine(this.dataset.t,this)" data-t="${plain.replace(/"/g,'&quot;')}" title="Play line">▶</button>`:'';
+      return `<span class="ln" data-pidx="${idx}" data-lidx="${li}">${withBadge}${noteBtn}${voiceBtn}${ipaHtml}${noteHtml}</span>`;
     }).join('<br>');
     const cls=['para',isHeading&&'is-heading',repeatMap[idx]&&'has-repeat'].filter(Boolean).join(' ');
     const noTint=!useTints?' style="background:transparent;border-left-color:transparent"':'';
-    return `<p class="${cls}" data-pnum="${idx+1}" data-pidx="${idx}"${noTint}>${linesHtml}</p>`;
+    const pKey='p'+idx;
+    const hasPNote=!!notes[pKey];
+    const pNoteBtn=`<button class="note-btn pnote-btn${hasPNote?' has-note':''}" onclick="openNote(event,'${pKey}')" title="${hasPNote?'Edit paragraph note':'Add paragraph note'}">${hasPNote?'✎':'¶'}&#8203;</button>`;
+    const pNoteHtml=hasPNote?`<span class="note-display note-${notePos} pnote-display">${notes[pKey].replace(/</g,'&lt;')}</span>`:'';
+    return `<p class="${cls}" data-pnum="${idx+1}" data-pidx="${idx}"${noTint}>${linesHtml}${pNoteBtn}${pNoteHtml}</p>`;
   }).join('');
   out.innerHTML=titleHtml+parasHtml;
 }
@@ -1750,6 +2032,10 @@ function getSettings() {
   return {
     align:     document.getElementById('cfg-align').value,
     pwmargin:  window.pwMarginVal ?? 4,
+    ipaon:     document.getElementById('cfg-ipa-on')?.checked ? 1 : 0,
+    voiceon:   document.getElementById('cfg-voice-on')?.checked ? 1 : 0,
+    voicename: selectedVoiceName || '',
+    ipalang:   document.getElementById('cfg-ipa-lang')?.value || 'fr',
     notepos:   document.getElementById('cfg-note-pos')?.value || 'below',
     notegap:   document.getElementById('cfg-note-gap').value,
     size:    document.getElementById('cfg-size').value,
@@ -1775,6 +2061,11 @@ function getSettings() {
 function applySettingsFromObj(s) {
   if (s.align    !== undefined) document.getElementById('cfg-align').value    = s.align;
   if (s.pwmargin !== undefined) { window.pwMarginVal = parseInt(s.pwmargin); pwMargin(0); document.getElementById('pw-margin-val').textContent = window.pwMarginVal; }
+  if (s.ipaon !== undefined && document.getElementById('cfg-ipa-on')) document.getElementById('cfg-ipa-on').checked = s.ipaon==1;
+  if (s.voiceon !== undefined && document.getElementById('cfg-voice-on')) document.getElementById('cfg-voice-on').checked = s.voiceon==1;
+  if (s.voicename !== undefined) selectedVoiceName = s.voicename;
+  if (s.ipalang !== undefined && document.getElementById('cfg-ipa-lang')) document.getElementById('cfg-ipa-lang').value = s.ipalang;
+  if (document.getElementById('cfg-ipa-on')) onPronChange();
   if (s.notepos !== undefined && document.getElementById('cfg-note-pos')) document.getElementById('cfg-note-pos').value = s.notepos;
   if (s.notegap !== undefined) { document.getElementById('cfg-note-gap').value = s.notegap; syncNoteGap(); }
   if (s.size   !== undefined) document.getElementById('cfg-size').value    = s.size;
@@ -1810,7 +2101,7 @@ function applySettingsFromObj(s) {
 }
 
 const DEFAULTS = {
-  align:'left', notepos:'below', notegap:'3', pwmargin:'4',
+  align:'left', ipaon:'0', voiceon:'0', voicename:'', ipalang:'fr', notepos:'below', notegap:'3', pwmargin:'4',
   size:'15', lh:'190', ws:'1', pg:'14', indent:'24', bw:'2', font:'0',
   margin:'10', cols:'0', pnums:'1', bionic:'1', bioint:'50', tints:'1', tintop:'6',
   repeat:'1', sim:'65'
@@ -1903,7 +2194,7 @@ async function initFromUrl() {
   if (params.has('preview')) document.body.classList.add('preview-mode');
 
   // Apply settings from URL
-  const cfgKeys = ['align','notepos','notegap','pwmargin','size','lh','ws','pg','indent','bw','font','gfont','margin','cols','pnums','bionic','bioint','tints','tintop','repeat','sim'];
+  const cfgKeys = ['align','ipaon','voiceon','voicename','ipalang','notepos','notegap','pwmargin','size','lh','ws','pg','indent','bw','font','gfont','margin','cols','pnums','bionic','bioint','tints','tintop','repeat','sim'];
   const s = {};
   cfgKeys.forEach(k => { if (params.has(k)) s[k] = params.get(k); });
   if (Object.keys(s).length) applySettingsFromObj(s);
