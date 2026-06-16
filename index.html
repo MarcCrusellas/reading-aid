@@ -22,6 +22,8 @@
 html, body { height: 100%; }
 body {
   font-family: 'Atkinson Hyperlegible', Georgia, serif;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
   background: var(--bg);
   color: var(--ink);
   display: flex;
@@ -1686,6 +1688,7 @@ function setMode(mode) {
   document.getElementById('settings-panel').classList.toggle('active', !isEdit);
   document.getElementById('btn-edit').classList.toggle('active', isEdit);
   if (mode === 'cfg' && document.getElementById('cfg-voice-on')?.checked) { refreshVoiceList(); checkVoiceAvailability(); }
+  if (typeof updateUrl === 'function') updateUrl();
   document.getElementById('btn-cfg').classList.toggle('active', !isEdit);
   document.getElementById('left-label').textContent = isEdit ? 'Input' : 'Settings';
 }
@@ -1735,7 +1738,7 @@ function applySettings() {
     :root { --note-gap: ${noteGap}; }
     :root { --line-1:${tintColor(THEMES[currentThemeIdx].l1,top)}; --line-2:${tintColor(THEMES[currentThemeIdx].l2,top)}; --line-3:${tintColor(THEMES[currentThemeIdx].l3,top)}; }
     @page { margin: ${margin}cm; }
-    @media print { .output { columns:${cols?2:1}; column-gap:2.5rem; font-size:${size}px; } }
+    @media print { .output { column-count:${cols?2:1}; column-gap:1.5cm; column-fill:auto; font-size:${size}px; display:block; } .para { -webkit-column-break-inside:avoid; break-inside:avoid; } }
   `;
   updateUrl();
 }
@@ -2099,8 +2102,15 @@ function selectSong(i) {
 }
 
 /* ── URL state ── */
+function getCurrentView() {
+  if (document.body.classList.contains('preview-mode')) return 'preview';
+  if (document.getElementById('btn-cfg')?.classList.contains('active')) return 'settings';
+  return 'edit';
+}
+
 function getSettings() {
   return {
+    view:      getCurrentView(),
     align:     document.getElementById('cfg-align').value,
     pwmargin:  window.pwMarginVal ?? 4,
     ipaon:     document.getElementById('cfg-ipa-on')?.checked ? 1 : 0,
@@ -2131,6 +2141,7 @@ function getSettings() {
 
 function applySettingsFromObj(s) {
   if (s.align    !== undefined) document.getElementById('cfg-align').value    = s.align;
+  if (s.view !== undefined) window._pendingView = s.view;
   if (s.pwmargin !== undefined) { window.pwMarginVal = parseInt(s.pwmargin); pwMargin(0); document.getElementById('pw-margin-val').textContent = window.pwMarginVal; }
   if (s.ipaon !== undefined && document.getElementById('cfg-ipa-on')) document.getElementById('cfg-ipa-on').checked = s.ipaon==1;
   if (s.voiceon !== undefined && document.getElementById('cfg-voice-on')) document.getElementById('cfg-voice-on').checked = s.voiceon==1;
@@ -2172,7 +2183,7 @@ function applySettingsFromObj(s) {
 }
 
 const DEFAULTS = {
-  align:'left', ipaon:'0', voiceon:'0', voicename:'', ipalang:'fr', notepos:'below', notegap:'3', pwmargin:'4',
+  view:'edit', align:'left', ipaon:'0', voiceon:'0', voicename:'', ipalang:'fr', notepos:'below', notegap:'3', pwmargin:'4',
   size:'15', lh:'190', ws:'1', pg:'14', indent:'24', bw:'2', font:'0',
   margin:'10', cols:'0', pnums:'1', bionic:'1', bioint:'50', tints:'1', tintop:'6',
   repeat:'1', sim:'65'
@@ -2265,7 +2276,7 @@ async function initFromUrl() {
   if (params.has('preview')) document.body.classList.add('preview-mode');
 
   // Apply settings from URL
-  const cfgKeys = ['align','ipaon','voiceon','voicename','ipalang','notepos','notegap','pwmargin','size','lh','ws','pg','indent','bw','font','gfont','margin','cols','pnums','bionic','bioint','tints','tintop','repeat','sim'];
+  const cfgKeys = ['view','align','ipaon','voiceon','voicename','ipalang','notepos','notegap','pwmargin','size','lh','ws','pg','indent','bw','font','gfont','margin','cols','pnums','bionic','bioint','tints','tintop','repeat','sim'];
   const s = {};
   cfgKeys.forEach(k => { if (params.has(k)) s[k] = params.get(k); });
   if (Object.keys(s).length) applySettingsFromObj(s);
@@ -2339,6 +2350,12 @@ async function initFromUrl() {
   initMobile();
   initThemeSwatches();
   if (currentThemeIdx) applyTheme(currentThemeIdx);
+  // Restore view (edit / settings / preview) — but URL ?preview=1 wins
+  if (!getUrlParams().has('preview') && window._pendingView) {
+    if (window._pendingView === 'settings') { if (window.innerWidth < 768) setMobileTab('settings'); else setMode('cfg'); }
+    else if (window._pendingView === 'preview') { document.body.classList.add('preview-mode'); if (window.innerWidth < 768) document.body.classList.add('mob-preview'); }
+    else { if (window.innerWidth < 768) setMobileTab('edit'); else setMode('edit'); }
+  }
 }
 
 /* ── Markdown export ── */
@@ -2640,6 +2657,8 @@ function setMobileTab(tab) {
   });
   if (tab === 'edit' || tab === 'settings') {
     setMode(tab === 'settings' ? 'cfg' : 'edit');
+  } else if (typeof updateUrl === 'function') {
+    updateUrl();
   }
 }
 
