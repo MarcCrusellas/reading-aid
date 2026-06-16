@@ -1601,6 +1601,19 @@ body.fc-mode .mobile-nav { display: none; }
   </div>
 </div>
 
+<!-- Debug console (hidden; toggle by adding #debug or tapping brand 5x) -->
+<div id="debug-console" style="display:none;position:fixed;left:0;right:0;bottom:0;height:40vh;z-index:9999;background:#1a1a1a;color:#d0d0d0;font-family:'DM Mono',monospace;font-size:11px;border-top:2px solid #c0603a;display:none;flex-direction:column;">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:0.4rem 0.75rem;border-bottom:1px solid #333;flex-shrink:0;">
+    <span style="color:#c0603a;letter-spacing:0.1em;">DEBUG CONSOLE</span>
+    <span>
+      <button onclick="dbgClear()" style="background:#333;color:#ccc;border:none;border-radius:3px;padding:0.25rem 0.6rem;font-family:inherit;font-size:10px;margin-right:4px;">Clear</button>
+      <button onclick="dbgCopy()" style="background:#333;color:#ccc;border:none;border-radius:3px;padding:0.25rem 0.6rem;font-family:inherit;font-size:10px;margin-right:4px;">Copy</button>
+      <button onclick="toggleDebug(false)" style="background:#c0603a;color:white;border:none;border-radius:3px;padding:0.25rem 0.6rem;font-family:inherit;font-size:10px;">Close</button>
+    </span>
+  </div>
+  <div id="debug-log" style="flex:1;overflow-y:auto;padding:0.5rem 0.75rem;white-space:pre-wrap;word-break:break-word;line-height:1.5;"></div>
+</div>
+
 <!-- Share toast -->
 <div id="share-toast" style="
   position:fixed; bottom:1.5rem; left:50%; transform:translateX(-50%) translateY(20px);
@@ -1614,6 +1627,55 @@ body.fc-mode .mobile-nav { display: none; }
 <style id="dynamic-styles"></style>
 
 <script>
+/* ── Debug console (mobile-friendly log viewer) ── */
+const _dbgBuffer = [];
+function dbgWrite(type, args) {
+  const msg = '[' + type + '] ' + args.map(a => {
+    try { return typeof a === 'object' ? JSON.stringify(a) : String(a); }
+    catch(e) { return String(a); }
+  }).join(' ');
+  _dbgBuffer.push(msg);
+  if (_dbgBuffer.length > 300) _dbgBuffer.shift();
+  const el = document.getElementById('debug-log');
+  if (el) {
+    const line = document.createElement('div');
+    line.textContent = msg;
+    if (type === 'error') line.style.color = '#ff6b6b';
+    else if (type === 'warn') line.style.color = '#ffd166';
+    el.appendChild(line);
+    el.scrollTop = el.scrollHeight;
+  }
+}
+['log','warn','error'].forEach(t => {
+  const orig = console[t].bind(console);
+  console[t] = (...args) => { dbgWrite(t, args); orig(...args); };
+});
+window.addEventListener('error', e => dbgWrite('error', [e.message + ' @ ' + (e.filename||'') + ':' + (e.lineno||'')]));
+window.addEventListener('unhandledrejection', e => dbgWrite('error', ['Unhandled promise: ' + (e.reason?.message || e.reason)]));
+
+function toggleDebug(show) {
+  const el = document.getElementById('debug-console');
+  const visible = show === undefined ? el.style.display === 'none' : show;
+  el.style.display = visible ? 'flex' : 'none';
+}
+function dbgClear() { _dbgBuffer.length = 0; document.getElementById('debug-log').innerHTML = ''; }
+function dbgCopy() {
+  navigator.clipboard.writeText(_dbgBuffer.join('\n')).then(()=>{
+    const t=document.getElementById('share-toast'); if(t){t.textContent='Logs copied';t.style.opacity='1';t.style.transform='translateX(-50%) translateY(0)';setTimeout(()=>{t.style.opacity='0';t.style.transform='translateX(-50%) translateY(20px)';t.textContent='Link copied to clipboard';},2000);}
+  });
+}
+if (location.hash.includes('debug')) setTimeout(()=>toggleDebug(true), 200);
+let _brandTaps = 0, _brandTimer = null;
+window.addEventListener('DOMContentLoaded', () => {
+  const brand = document.querySelector('.topbar-brand');
+  if (brand) brand.addEventListener('click', () => {
+    _brandTaps++;
+    clearTimeout(_brandTimer);
+    _brandTimer = setTimeout(()=>{ _brandTaps = 0; }, 800);
+    if (_brandTaps >= 5) { _brandTaps = 0; toggleDebug(true); }
+  });
+});
+
 /* ── Mode ── */
 function setMode(mode) {
   const isEdit = mode === 'edit';
