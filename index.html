@@ -1738,7 +1738,7 @@ function applySettings() {
     :root { --note-gap: ${noteGap}; }
     :root { --line-1:${tintColor(THEMES[currentThemeIdx].l1,top)}; --line-2:${tintColor(THEMES[currentThemeIdx].l2,top)}; --line-3:${tintColor(THEMES[currentThemeIdx].l3,top)}; }
     @page { margin: ${margin}cm; }
-    @media print { .output { column-count:${cols?2:1}; column-gap:1.5cm; column-fill:auto; font-size:${size}px; display:block; } .para { -webkit-column-break-inside:avoid; break-inside:avoid; } }
+    @media print { .panel-right { min-height:0 !important; } .output { column-count:${cols?2:1}; column-gap:1.2cm; column-fill:balance; font-size:${size}px; display:block; } .para { -webkit-column-break-inside:avoid; break-inside:avoid; } .doc-title, .doc-divider { column-span:all; -webkit-column-span:all; } }
   `;
   updateUrl();
 }
@@ -2215,7 +2215,7 @@ function buildParams(includePreview) {
   Object.entries(cfg).forEach(([k,v]) => {
     if (String(v) !== String(DEFAULTS[k])) params.set(k, v);
   });
-  if (includePreview) params.set('preview', '1');
+  if (includePreview) { params.set('preview', '1'); params.delete('view'); }
   return params;
 }
 
@@ -2430,7 +2430,11 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape') { closeModal(); cl
 
 /* ── Preview button (desktop) ── */
 function openPreview() {
-  location.href = buildUrl(true);
+  document.body.classList.add('preview-mode');
+  if (window.innerWidth < 768) { document.body.classList.add('mob-preview'); document.body.classList.remove('mob-edit','mob-settings'); }
+  const params = buildParams(true);
+  try { history.replaceState(null, '', location.pathname + '#' + params.toString()); } catch(e) {}
+  window.scrollTo(0,0);
 }
 
 
